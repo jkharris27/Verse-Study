@@ -56,7 +56,7 @@
     <div>
       <h1>Verse Study</h1>
       <div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div>
-      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · v41</div>
+      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.1</div>
     </div>
   </div>
 </header>
@@ -118,12 +118,20 @@ const HENRY_BOOKS={"1":"genesis","2":"exodus","3":"leviticus","4":"numbers","5":
 const SDA_VOLUME_RANGES=[
   [1,1,5],[2,6,12],[3,13,22],[4,23,39],[5,40,43],[6,44,49],[7,50,66]
 ];
+const SDA_ARCHIVE_NAMES={
+  9:'1-Samuel',10:'2-Samuel',11:'1-Kings',12:'2-Kings',
+  13:'1-Chronicles',14:'2-Chronicles',
+  22:'The Song of Solomon',25:'Lamentations of Jeremiah',
+  50:'Phillippians'
+};
 function sdaFileInfo(bookId){
  const range=SDA_VOLUME_RANGES.find(([,first,last])=>bookId>=first&&bookId<=last);
  const book=bookById(bookId);
- if(!range||!book)return null;
+ // The archive currently has no separate OCR book files for 2 or 3 John.
+ if(!range||!book||bookId===63||bookId===64)return null;
  const volume=range[0],number=String(bookId).padStart(2,'0');
- return {volume,file:`SdaBc-${volume} (${number}) ${book.name}`};
+ const archiveName=SDA_ARCHIVE_NAMES[bookId]||book.name;
+ return {volume,file:`SdaBc-${volume} (${number}) ${archiveName}`};
 }
 const STEP_GREEK_BOOKS={
   40:'Matt',41:'Mark',42:'Luke',43:'John',44:'Acts',45:'Rom',46:'1Cor',47:'2Cor',
