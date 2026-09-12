@@ -56,7 +56,7 @@
     <div>
       <h1>Verse Study</h1>
       <div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div>
-      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · v38</div>
+      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · v39</div>
     </div>
   </div>
 </header>
@@ -115,7 +115,16 @@ const SAFE_STORAGE={
 let current={book:43,chapter:8,verse:1};
 let currentESVText='';
 const HENRY_BOOKS={"1":"genesis","2":"exodus","3":"leviticus","4":"numbers","5":"deuteronomy","6":"joshua","7":"judges","8":"ruth","9":"1-samuel","10":"2-samuel","11":"1-kings","12":"2-kings","13":"1-chronicles","14":"2-chronicles","15":"ezra","16":"nehemiah","17":"esther","18":"job","19":"psalms","20":"proverbs","21":"ecclesiastes","22":"song-of-solomon","23":"isaiah","24":"jeremiah","25":"lamentations","26":"ezekiel","27":"daniel","28":"hosea","29":"joel","30":"amos","31":"obadiah","32":"jonah","33":"micah","34":"nahum","35":"habakkuk","36":"zephaniah","37":"haggai","38":"zechariah","39":"malachi","40":"matthew","41":"mark","42":"luke","43":"john","44":"acts","45":"romans","46":"1-corinthians","47":"2-corinthians","48":"galatians","49":"ephesians","50":"philippians","51":"colossians","52":"1-thessalonians","53":"2-thessalonians","54":"1-timothy","55":"2-timothy","56":"titus","57":"philemon","58":"hebrews","59":"james","60":"1-peter","61":"2-peter","62":"1-john","63":"2-john","64":"3-john","65":"jude","66":"revelation"};
-const SDA_FILES={40:'SdaBc-5 (40) Matthew',41:'SdaBc-5 (41) Mark',42:'SdaBc-5 (42) Luke',43:'SdaBc-5 (43) John'};
+const SDA_VOLUME_RANGES=[
+  [1,1,5],[2,6,12],[3,13,22],[4,23,39],[5,40,43],[6,44,49],[7,50,66]
+];
+function sdaFileInfo(bookId){
+ const range=SDA_VOLUME_RANGES.find(([,first,last])=>bookId>=first&&bookId<=last);
+ const book=bookById(bookId);
+ if(!range||!book)return null;
+ const volume=range[0],number=String(bookId).padStart(2,'0');
+ return {volume,file:`SdaBc-${volume} (${number}) ${book.name}`};
+}
 const STEP_GREEK_BOOKS={
   40:'Matt',41:'Mark',42:'Luke',43:'John',44:'Acts',45:'Rom',46:'1Cor',47:'2Cor',
   48:'Gal',49:'Eph',50:'Phil',51:'Col',52:'1Thess',53:'2Thess',54:'1Tim',55:'2Tim',
@@ -376,33 +385,48 @@ function extractSdaVerse(text,x){
 async function loadSdaCommentary(x){
  const el=$('sdaCommentary'),title=$('sdaCommentaryTitle');if(!el||!title)return;
  title.textContent='SDA Commentary · SDA Bible Commentary';
- const file=SDA_FILES[x.book];
- if(!file){
+ const info=sdaFileInfo(x.book);
+ if(!info){
    el.textContent='SDA Bible Commentary source is not connected for this book yet.';
    return;
  }
- const ck=`vs37_sda_${x.book}`;
- let tx=SAFE_STORAGE.getItem(ck);
+ const verseKey=`vs39_sda_verse_${x.book}_${x.chapter}_${x.verse}`;
+ const savedVerse=SAFE_STORAGE.getItem(verseKey);
+ if(savedVerse){
+   title.textContent=`SDA Commentary · SDA Bible Commentary, vol. ${info.volume} · ${refOf(x)}`;
+   el.textContent=savedVerse;
+   return;
+ }
+ let tx='';
  try{
-   if(!tx){
-     const base='https://archive.org/download/SdaBibleCommentary1980/';
-     const urls=[
-       `${base}${encodeURIComponent(file+'_djvu.txt')}`,
-       `${base}${encodeURIComponent(file+'.txt')}`
-     ];
-     for(const url of urls){
-       try{
-         const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),4500);
-         const r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
-         clearTimeout(timer);
-         if(r.ok){tx=await r.text();SAFE_STORAGE.setItem(ck,tx);break}
-       }catch(e){}
-     }
+   const base='https://archive.org/download/SdaBibleCommentary1980/';
+   const urls=[
+     `${base}${encodeURIComponent(info.file+'_djvu.txt')}`,
+     `${base}${encodeURIComponent(info.file+'.txt')}`
+   ];
+   for(const url of urls){
+     try{
+       const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),9000);
+       let r=null;
+       if('caches' in window){
+         const cache=await caches.open('verse-study-sda-books-v1');
+         r=await cache.match(url);
+         if(!r){
+           r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
+           if(r.ok)await cache.put(url,r.clone());
+         }
+       }else{
+         r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
+       }
+       clearTimeout(timer);
+       if(r&&r.ok){tx=await r.text();break}
+     }catch(e){}
    }
    if(!tx){el.textContent='SDA commentary source could not load.';return}
    const text=extractSdaVerse(tx,x);
    if(text){
-     title.textContent=`SDA Commentary · SDA Bible Commentary, vol. 5 · ${refOf(x)}`;
+     SAFE_STORAGE.setItem(verseKey,text);
+     title.textContent=`SDA Commentary · SDA Bible Commentary, vol. ${info.volume} · ${refOf(x)}`;
      el.textContent=text;
    }else{
      el.textContent='No direct SDA Bible Commentary note was found for this verse.';
