@@ -49,6 +49,19 @@
 .wordgrammar{font-size:12px;color:var(--muted);margin-top:4px}
 .wordsource{font-size:11px;color:#8f9b95;margin-top:7px}
 .wordloading{font-size:13px;color:var(--muted);margin-top:6px}
+.shareicon{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:white;padding:5px;display:grid;place-items:center;flex:0 0 auto}
+.shareicon img{display:block;width:27px;height:27px}
+.shareoverlay{position:fixed;inset:0;background:#000b;z-index:100;display:none;place-items:center;padding:20px}
+.shareoverlay.show{display:grid}
+.sharedialog{position:relative;width:min(100%,380px);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center;box-shadow:0 18px 60px #0008}
+.shareclose{position:absolute;right:11px;top:8px;border:0;background:transparent;color:var(--muted);font-size:30px;line-height:1;padding:5px 8px}
+.sharetitle{font-size:22px;font-weight:800;color:var(--cream)}
+.sharesubtitle{font-size:14px;color:var(--muted);margin:5px 0 16px}
+.shareqr{display:block;width:min(72vw,270px);height:auto;margin:0 auto;background:white;border-radius:12px;padding:8px}
+.sharelink{font-size:12px;color:var(--muted);margin:14px 0;overflow-wrap:anywhere}
+.sharebuttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.sharebuttons button{font:inherit;font-weight:700;color:var(--text);padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.sharestatus{min-height:18px;margin-top:8px;font-size:12px;color:var(--gold)}
 </style></head>
 <body>
 <header>
@@ -56,8 +69,9 @@
     <div>
       <h1>Verse Study</h1>
       <div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div>
-      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.2</div>
+      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.3</div>
     </div>
+    <button id="openShare" class="shareicon" aria-label="Share Verse Study" title="Share Verse Study"><img src="share-qr.svg" alt=""></button>
   </div>
 </header>
 
@@ -76,6 +90,21 @@
   <button id="prev">← Previous</button>
   <button id="cur">John 8:1</button>
   <button id="next">Next →</button>
+</div>
+
+<div id="shareOverlay" class="shareoverlay" aria-hidden="true">
+  <div class="sharedialog" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <button id="closeShare" class="shareclose" aria-label="Close">×</button>
+    <div id="shareTitle" class="sharetitle">Share Verse Study</div>
+    <div class="sharesubtitle">Scan this code with a phone camera</div>
+    <img class="shareqr" src="share-qr.svg" alt="QR code for Verse Study">
+    <div class="sharelink">jkharris27.github.io/Verse-Study/</div>
+    <div class="sharebuttons">
+      <button id="nativeShare">Share link</button>
+      <button id="copyShare">Copy link</button>
+    </div>
+    <div id="shareStatus" class="sharestatus" aria-live="polite"></div>
+  </div>
 </div>
 
 <div id="pickerOverlay" class="overlay" aria-hidden="true">
@@ -106,6 +135,7 @@
 
 <script>
 const $=id=>document.getElementById(id);
+const SHARE_URL='https://jkharris27.github.io/Verse-Study/';
 const BOOKS=[{"id": 1, "name": "Genesis", "chapters": 50}, {"id": 2, "name": "Exodus", "chapters": 40}, {"id": 3, "name": "Leviticus", "chapters": 27}, {"id": 4, "name": "Numbers", "chapters": 36}, {"id": 5, "name": "Deuteronomy", "chapters": 34}, {"id": 6, "name": "Joshua", "chapters": 24}, {"id": 7, "name": "Judges", "chapters": 21}, {"id": 8, "name": "Ruth", "chapters": 4}, {"id": 9, "name": "1 Samuel", "chapters": 31}, {"id": 10, "name": "2 Samuel", "chapters": 24}, {"id": 11, "name": "1 Kings", "chapters": 22}, {"id": 12, "name": "2 Kings", "chapters": 25}, {"id": 13, "name": "1 Chronicles", "chapters": 29}, {"id": 14, "name": "2 Chronicles", "chapters": 36}, {"id": 15, "name": "Ezra", "chapters": 10}, {"id": 16, "name": "Nehemiah", "chapters": 13}, {"id": 17, "name": "Esther", "chapters": 10}, {"id": 18, "name": "Job", "chapters": 42}, {"id": 19, "name": "Psalms", "chapters": 150}, {"id": 20, "name": "Proverbs", "chapters": 31}, {"id": 21, "name": "Ecclesiastes", "chapters": 12}, {"id": 22, "name": "Song of Solomon", "chapters": 8}, {"id": 23, "name": "Isaiah", "chapters": 66}, {"id": 24, "name": "Jeremiah", "chapters": 52}, {"id": 25, "name": "Lamentations", "chapters": 5}, {"id": 26, "name": "Ezekiel", "chapters": 48}, {"id": 27, "name": "Daniel", "chapters": 12}, {"id": 28, "name": "Hosea", "chapters": 14}, {"id": 29, "name": "Joel", "chapters": 3}, {"id": 30, "name": "Amos", "chapters": 9}, {"id": 31, "name": "Obadiah", "chapters": 1}, {"id": 32, "name": "Jonah", "chapters": 4}, {"id": 33, "name": "Micah", "chapters": 7}, {"id": 34, "name": "Nahum", "chapters": 3}, {"id": 35, "name": "Habakkuk", "chapters": 3}, {"id": 36, "name": "Zephaniah", "chapters": 3}, {"id": 37, "name": "Haggai", "chapters": 2}, {"id": 38, "name": "Zechariah", "chapters": 14}, {"id": 39, "name": "Malachi", "chapters": 4}, {"id": 40, "name": "Matthew", "chapters": 28}, {"id": 41, "name": "Mark", "chapters": 16}, {"id": 42, "name": "Luke", "chapters": 24}, {"id": 43, "name": "John", "chapters": 21}, {"id": 44, "name": "Acts", "chapters": 28}, {"id": 45, "name": "Romans", "chapters": 16}, {"id": 46, "name": "1 Corinthians", "chapters": 16}, {"id": 47, "name": "2 Corinthians", "chapters": 13}, {"id": 48, "name": "Galatians", "chapters": 6}, {"id": 49, "name": "Ephesians", "chapters": 6}, {"id": 50, "name": "Philippians", "chapters": 4}, {"id": 51, "name": "Colossians", "chapters": 4}, {"id": 52, "name": "1 Thessalonians", "chapters": 5}, {"id": 53, "name": "2 Thessalonians", "chapters": 3}, {"id": 54, "name": "1 Timothy", "chapters": 6}, {"id": 55, "name": "2 Timothy", "chapters": 4}, {"id": 56, "name": "Titus", "chapters": 3}, {"id": 57, "name": "Philemon", "chapters": 1}, {"id": 58, "name": "Hebrews", "chapters": 13}, {"id": 59, "name": "James", "chapters": 5}, {"id": 60, "name": "1 Peter", "chapters": 5}, {"id": 61, "name": "2 Peter", "chapters": 3}, {"id": 62, "name": "1 John", "chapters": 5}, {"id": 63, "name": "2 John", "chapters": 1}, {"id": 64, "name": "3 John", "chapters": 1}, {"id": 65, "name": "Jude", "chapters": 1}, {"id": 66, "name": "Revelation", "chapters": 22}];
 const bookById=id=>BOOKS.find(b=>b.id===Number(id));
 const SAFE_STORAGE={
@@ -667,6 +697,32 @@ async function next(){
  if(current.book<66)return goTo({book:current.book+1,chapter:1,verse:1});
 }
 $('prev').onclick=previous;$('next').onclick=next;
+
+function openShare(){
+ $('shareOverlay').classList.add('show');$('shareOverlay').setAttribute('aria-hidden','false');
+ $('shareStatus').textContent='';document.body.style.overflow='hidden';
+}
+function closeShare(){
+ $('shareOverlay').classList.remove('show');$('shareOverlay').setAttribute('aria-hidden','true');
+ document.body.style.overflow='';
+}
+async function copyShareLink(){
+ try{
+  await navigator.clipboard.writeText(SHARE_URL);
+  $('shareStatus').textContent='Link copied';
+ }catch(e){
+  const t=document.createElement('textarea');t.value=SHARE_URL;document.body.appendChild(t);t.select();
+  document.execCommand('copy');t.remove();$('shareStatus').textContent='Link copied';
+ }
+}
+$('openShare').onclick=openShare;$('closeShare').onclick=closeShare;
+$('shareOverlay').onclick=e=>{if(e.target===$('shareOverlay'))closeShare()};
+$('copyShare').onclick=copyShareLink;
+$('nativeShare').onclick=async()=>{
+ if(navigator.share){
+  try{await navigator.share({title:'Verse Study',text:'Open Verse Study',url:SHARE_URL})}catch(e){}
+ }else await copyShareLink();
+};
 
 render();
 if('serviceWorker' in navigator && location.protocol==='https:'){
