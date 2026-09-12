@@ -56,7 +56,7 @@
     <div>
       <h1>Verse Study</h1>
       <div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div>
-      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.1</div>
+      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.2</div>
     </div>
   </div>
 </header>
@@ -138,6 +138,12 @@ const STEP_GREEK_BOOKS={
   48:'Gal',49:'Eph',50:'Phil',51:'Col',52:'1Thess',53:'2Thess',54:'1Tim',55:'2Tim',
   56:'Titus',57:'Phlm',58:'Heb',59:'Jas',60:'1Pet',61:'2Pet',62:'1John',63:'2John',
   64:'3John',65:'Jude',66:'Rev'
+};
+const OSHB_BOOKS={
+  1:'Gen',2:'Exod',3:'Lev',4:'Num',5:'Deut',6:'Josh',7:'Judg',8:'Ruth',9:'1Sam',10:'2Sam',
+  11:'1Kgs',12:'2Kgs',13:'1Chr',14:'2Chr',15:'Ezra',16:'Neh',17:'Esth',18:'Job',19:'Ps',
+  20:'Prov',21:'Eccl',22:'Song',23:'Isa',24:'Jer',25:'Lam',26:'Ezek',27:'Dan',28:'Hos',
+  29:'Joel',30:'Amos',31:'Obad',32:'Jonah',33:'Mic',34:'Nah',35:'Hab',36:'Zeph',37:'Hag',38:'Zech',39:'Mal'
 };
 
 let translationToken=0;
@@ -235,6 +241,70 @@ async function greekWordData(x){
  }finally{clearTimeout(timer)}
 }
 
+async function cachedSourceText(url,cacheName){
+ const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
+ try{
+  if('caches' in window){
+   const cache=await caches.open(cacheName),saved=await cache.match(url);
+   if(saved)return await saved.text();
+   const r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
+   if(!r.ok)throw new Error('source '+r.status);
+   await cache.put(url,r.clone());return await r.text();
+  }
+  const r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
+  if(!r.ok)throw new Error('source '+r.status);
+  return await r.text();
+ }finally{clearTimeout(timer)}
+}
+function hebrewStrong(lemma){
+ const parts=String(lemma||'').split('/');
+ const m=(parts[parts.length-1]||'').match(/\d+/);
+ return m?'H'+String(Number(m[0])):'';
+}
+function hebrewGrammar(morph){
+ const core=String(morph||'').split('/').pop().replace(/^H/,'');
+ const type=core[0]||'';
+ const types={N:'noun',V:'verb',A:'adjective',P:'pronoun',R:'preposition',C:'conjunction',D:'adverb',T:'particle'};
+ let out=types[type]||'Hebrew word';
+ if(type==='V'){
+  const stems={q:'Qal',N:'Niphal',p:'Piel',P:'Pual',h:'Hiphil',H:'Hophal',t:'Hithpael'};
+  const forms={p:'perfect',q:'sequential perfect',i:'imperfect',w:'sequential imperfect',h:'cohortative',j:'jussive',v:'imperative',r:'participle'};
+  if(stems[core[1]])out+=` · ${stems[core[1]]}`;
+  if(forms[core[2]])out+=` · ${forms[core[2]]}`;
+ }
+ const gender=core.includes('m')?'masculine':core.includes('f')?'feminine':'';
+ const number=core.includes('p')?'plural':core.includes('d')?'dual':core.includes('s')?'singular':'';
+ if(type!=='V'&&gender)out+=` · ${gender}`;
+ if(type!=='V'&&number)out+=` · ${number}`;
+ return out;
+}
+function hebrewWordScore(w){
+ const core=String(w.morph||'').split('/').pop().replace(/^H/,'');
+ return /^[NVA]/.test(core)?5:/^[PRCTD]/.test(core)?-4:0;
+}
+async function hebrewWordData(x){
+ const code=OSHB_BOOKS[x.book];if(!code)throw new Error('Hebrew source not mapped');
+ const bookUrl=`https://raw.githubusercontent.com/openscriptures/morphhb/master/wlc/${code}.xml`;
+ const xml=await cachedSourceText(bookUrl,'verse-study-hebrew-books-v1');
+ const doc=new DOMParser().parseFromString(xml,'application/xml');
+ const verse=Array.from(doc.getElementsByTagNameNS('*','verse')).find(v=>v.getAttribute('osisID')===`${code}.${x.chapter}.${x.verse}`);
+ if(!verse)throw new Error('Hebrew verse not found');
+ const words=Array.from(verse.getElementsByTagNameNS('*','w')).map(w=>({
+  text:(w.textContent||'').replaceAll('/',''),lemma:w.getAttribute('lemma')||'',morph:w.getAttribute('morph')||''
+ }));
+ const lexUrl='https://raw.githubusercontent.com/openscriptures/HebrewLexicon/master/HebrewStrong.xml';
+ const lexText=await cachedSourceText(lexUrl,'verse-study-hebrew-lexicon-v1');
+ const lexDoc=new DOMParser().parseFromString(lexText,'application/xml');
+ const entries=new Map(Array.from(lexDoc.getElementsByTagNameNS('*','entry')).map(e=>[e.getAttribute('id'),e]));
+ return words.map(w=>{
+  const strong=hebrewStrong(w.lemma),entry=strong?entries.get(strong):null;
+  const head=entry?.getElementsByTagNameNS('*','w')[0];
+  const meaning=entry?.getElementsByTagNameNS('*','meaning')[0]?.textContent?.replace(/\s+/g,' ').trim()||'';
+  const usage=entry?.getElementsByTagNameNS('*','usage')[0]?.textContent?.replace(/\s+/g,' ').trim()||'';
+  return {...w,strong,xlit:head?.getAttribute('xlit')||'',pron:head?.getAttribute('pron')||'',meaning,usage};
+ });
+}
+
 function normEnglish(t){
  return String(t||'').toLowerCase().replace(/[“”‘’"'.,;:!?()[\]{}—–-]/g,' ').replace(/\s+/g,' ').trim();
 }
@@ -271,7 +341,30 @@ async function loadWordStudy(x){
  const isNT=x.book>=40;
  title.textContent=isNT?'Word Study · Greek':'Word Study · Hebrew';
  if(!isNT){
-   el.innerHTML='<div class="small">Hebrew word-study source is being added next. The scripture translations remain fully available.</div>';
+   el.textContent='Loading Hebrew word study…';
+   try{
+    const arr=(await hebrewWordData(x)).sort((a,b)=>hebrewWordScore(b)-hebrewWordScore(a));
+    const chosen=[],seen=new Set();
+    for(const w of arr){
+     if(hebrewWordScore(w)<1||!w.strong||seen.has(w.strong))continue;
+     seen.add(w.strong);chosen.push(w);if(chosen.length===5)break;
+    }
+    if(!chosen.length){el.textContent='No key lexical entries found for this verse.';return}
+    el.innerHTML=chosen.map(w=>{
+     const candidates=(w.usage||w.meaning).split(/[,;()]/).map(s=>s.replace(/[×]/g,'').trim()).filter(Boolean);
+     const esv=candidates.map(c=>({c,n:normEnglish(c)})).find(({n})=>n&&(' '+normEnglish(currentESVText)+' ').includes(' '+n+' '))?.c||'—';
+     const sense=w.meaning||w.usage||'Definition unavailable';
+     const grammar=hebrewGrammar(w.morph);
+     return `<div class="wordrow">
+      <div><span class="originalword" dir="rtl">${esc(w.text)}</span>${w.xlit?`<span class="wordmeta">${esc(w.xlit)}</span>`:''}<span class="wordmeta">${esc(w.strong)}</span></div>
+      <div class="wordmeaning"><b>ESV word:</b> ${esc(esv)} &nbsp; <b>Meaning:</b> ${esc(sense)}</div>
+      <div class="wordmeaning"><b>Word study:</b> This ${esc(grammar)} carries the lexical sense “${esc(sense)}.”</div>
+      <div class="wordgrammar"><b>Grammar:</b> ${esc(grammar)}${w.pron?` · Pronounced ${esc(w.pron)}`:''}</div>
+     </div>`;
+    }).join('');
+   }catch(e){
+    el.innerHTML='<div class="small">Hebrew word study could not load. The verse translations are unaffected.</div>';
+   }
    return;
  }
  el.textContent='Loading Greek word study…';
