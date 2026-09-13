@@ -69,7 +69,7 @@
     <div>
       <h1>Verse Study</h1>
       <div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div>
-      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.3</div>
+      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.4</div>
     </div>
     <button id="openShare" class="shareicon" aria-label="Share Verse Study" title="Share Verse Study"><img src="share-qr.svg" alt=""></button>
   </div>
@@ -588,6 +588,7 @@ async function loadAICommentary(x){
  }
 
  el.textContent='Generating AI commentary…';
+ await new Promise(resolve=>setTimeout(resolve,1500)); 
 
  try{
   const [esvResult,nltResult,msgResult]=await Promise.all([
