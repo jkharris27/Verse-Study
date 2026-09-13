@@ -574,7 +574,54 @@ function updateBookmarkUI(){
  $('bookmarkBtn').setAttribute('aria-pressed',same?'true':'false');
  $('bookmarkLabel').textContent=bm?`Bookmark: ${refOf(bm)}`:'No bookmark saved';
 }
-function render(){
+const AI_WORKER='https://verse-study.jkharris27.workers.dev';
+
+async function loadAICommentary(x){
+ const el=$('aiCommentary');
+ if(!el)return;
+
+ const cacheKeyAI=`vs_ai_${x.book}_${x.chapter}_${x.verse}`;
+ const cached=SAFE_STORAGE.getItem(cacheKeyAI);
+ if(cached){
+  el.textContent=cached;
+  return;
+ }
+
+ el.textContent='Generating AI commentary…';
+
+ try{
+  const [esvResult,nltResult,msgResult]=await Promise.all([
+   publicVerse('ESV',x),
+   publicVerse('NLT',x),
+   publicVerse('MSG',x)
+  ]);
+
+  const r=await fetch(AI_WORKER,{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    reference:refOf(x),
+    esv:esvResult.text,
+    nlt:nltResult.text,
+    msg:msgResult.text,
+    commonCommentary:$('commonCommentary')?.textContent||'',
+    sdaCommentary:$('sdaCommentary')?.textContent||''
+   })
+  });
+
+  if(!r.ok)throw new Error('AI request failed');
+
+  const data=await r.json();
+  const text=String(data.commentary||'').trim();
+  if(!text)throw new Error('Empty AI response');
+
+  SAFE_STORAGE.setItem(cacheKeyAI,text);
+  el.textContent=text;
+ }catch(e){
+  el.textContent='AI commentary could not load. Tap the current verse to try again.';
+ }
+}
+  function render(){
  currentESVText='';
  const ref=refOf();
  $('cur').textContent=ref;$('pickerLabel').textContent=ref;$('headerRef').textContent=`${ref} · ESV / NLT / MSG`;
