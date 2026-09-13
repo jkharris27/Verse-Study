@@ -1,4 +1,4 @@
-const CACHE='verse-study-v48';
+const CACHE='verse-study-v49';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg','./v47.js'];
 function injectEnhancements(html){
  if(html.includes('v47.js'))return html;
