@@ -1,785 +1,100 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111715"><meta name="color-scheme" content="dark"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Verse Study"><title>Verse Study</title>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111715">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Verse Study">
+<title>Verse Study</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
-<style>:root{--bg:#111715;--header:#111715e8;--panel:#1a211f;--panel2:#222a27;--text:#f2eee4;--muted:#aab4ae;--line:#39433f;--gold:#d2b36b;--cream:#f1e8d2;--warn:#493b1e;--ok:#1e3b2b}*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:var(--bg);color:var(--text)}.wrap{max-width:760px;margin:auto;padding:16px 16px 90px}header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);padding:14px 16px;border-bottom:1px solid var(--line);z-index:2}h1{font-size:22px;margin:0;color:var(--cream)}.small{font-size:13px;color:var(--muted)}.controls{display:flex;gap:8px;margin:14px 0}.controls select,.controls button,.bottom button{font:inherit;color:var(--text);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}.controls select{flex:1}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #00000033}.eyebrow{text-transform:uppercase;font-size:11px;letter-spacing:.09em;color:var(--gold);font-weight:700}.verse{font-family:Georgia,serif;font-size:22px;line-height:1.5;margin-top:8px;color:var(--cream)}.note{line-height:1.45;margin-top:7px}.status{padding:9px 11px;border-radius:10px;background:var(--panel2);font-size:13px}.bottom{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px;background:var(--header);border-top:1px solid var(--line);backdrop-filter:blur(8px)}.bottom button{flex:1}.bottom #cur{flex:1.3;font-weight:700;color:var(--gold)}.warn{background:var(--warn)}.ok{background:var(--ok)}
-.toprow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.header-actions{display:flex;gap:8px}
-.iconbtn{font:inherit;color:var(--text);border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:8px 10px}
-.quickbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:14px 0 12px}
-.picker-launch{margin:0}
-.picker-launch button{width:100%;font:inherit;color:var(--text);padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);text-align:left;min-height:42px}
-.bookmarkicon{width:42px;height:42px;display:grid;place-items:center;color:var(--text);border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:0}
-.bookmarkicon svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.bookmarkicon.active{background:var(--gold);color:#111715;border-color:var(--gold)}
-.bookmarknote{font-size:12px;color:var(--muted);margin:-4px 0 10px 2px}
-.overlay{position:fixed;inset:0;background:#0c100f;color:var(--text);z-index:50;display:none;overflow:auto}
-.overlay.show{display:block}
-.pickerhead{position:sticky;top:0;background:#0c100f;z-index:3;display:flex;align-items:center;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--line)}
-.backbtn{border:0;background:transparent;color:white;font-size:28px;line-height:1;padding:0 4px}
-.pickertitle{font-size:22px;font-weight:600}
-.booklist{padding:14px 14px 30px}
-.testamenttabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 16px}
-.testamenttabs button{font:inherit;font-weight:700;padding:12px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--muted)}
-.testamenttabs button.active{background:var(--gold);color:#111715;border-color:var(--gold)}
-.bookcolumns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.booksection{min-width:0}
-.sectiontitle{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:800;margin:0 0 8px 2px;min-height:28px;display:flex;align-items:flex-end}
-.bookbtn{display:block;width:100%;border:0;background:transparent;color:var(--text);text-align:left;font:inherit;font-size:14px;line-height:1.15;padding:8px 5px;border-radius:7px;margin:1px 0}
-.bookbtn.current{background:#2b3531;font-weight:800}
-.bookbtn.selected{background:#4a4331;color:var(--cream);font-weight:800}
-.chapterpanel{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-.chapterheading{font-size:22px;font-weight:700;margin-bottom:6px}
-.chapterhint{font-size:13px;color:var(--muted);margin-bottom:10px}
-.chaptergrid,.versegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
+<style>
+:root{--bg:#111715;--header:#111715e8;--panel:#1a211f;--panel2:#222a27;--text:#f2eee4;--muted:#aab4ae;--line:#39433f;--gold:#d2b36b;--cream:#f1e8d2;--warn:#493b1e;--ok:#1e3b2b}
+*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:var(--bg);color:var(--text)}
+.wrap{max-width:760px;margin:auto;padding:16px 16px 90px}header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);padding:14px 16px;border-bottom:1px solid var(--line);z-index:20}
+h1{font-size:22px;margin:0;color:var(--cream)}.small{font-size:13px;color:var(--muted)}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:10px}.header-actions{display:flex;gap:8px;align-items:center}
+.iconbtn,.shareicon{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);padding:0;display:grid;place-items:center;flex:0 0 auto}
+.iconbtn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.shareicon{background:white;padding:5px}.shareicon img{display:block;width:27px;height:27px}
+.quickbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:14px 0 12px}.picker-launch button{width:100%;font:inherit;color:var(--text);padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);text-align:left;min-height:42px}
+.bookmarkicon{width:42px;height:42px;display:grid;place-items:center;color:var(--text);border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:0}.bookmarkicon svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.bookmarkicon.active{background:var(--gold);color:#111715;border-color:var(--gold)}.bookmarknote{font-size:12px;color:var(--muted);margin:-4px 0 10px 2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #00000033}.eyebrow{text-transform:uppercase;font-size:11px;letter-spacing:.09em;color:var(--gold);font-weight:700}.note{line-height:1.45;margin-top:7px}.wordloading{font-size:13px;color:var(--muted);margin-top:6px}
+.commentary-body{line-height:1.45;height:14.5em;overflow-y:auto;overscroll-behavior:contain;padding-right:5px;margin-top:7px;scrollbar-width:thin}.commentary-body::-webkit-scrollbar{width:6px}.commentary-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px}
+.wordstudy{margin-top:12px}.wordrow{padding:12px 0;border-top:1px solid var(--line)}.wordrow:first-child{border-top:0;padding-top:4px}.originalword{font-family:Georgia,serif;font-size:23px;font-weight:700}.wordmeta{font-size:13px;color:var(--muted);margin-left:6px}.wordmeaning{margin-top:5px;line-height:1.45}.wordgrammar{font-size:12px;color:var(--muted);margin-top:4px}
+.bottom{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px;background:var(--header);border-top:1px solid var(--line);backdrop-filter:blur(8px);z-index:20}.bottom button{font:inherit;color:var(--text);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);flex:1}.bottom #cur{flex:1.3;font-weight:700;color:var(--gold)}
+.overlay{position:fixed;inset:0;background:#0c100f;color:var(--text);z-index:80;display:none;overflow:auto}.overlay.show{display:block}.pickerhead{position:sticky;top:0;background:#0c100f;z-index:3;display:flex;align-items:center;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--line)}.backbtn{border:0;background:transparent;color:white;font-size:28px;line-height:1;padding:0 4px}.pickertitle{font-size:22px;font-weight:600}.booklist{padding:14px 14px 30px}.testamenttabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 16px}.testamenttabs button{font:inherit;font-weight:700;padding:12px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--muted)}.testamenttabs button.active{background:var(--gold);color:#111715;border-color:var(--gold)}.bookcolumns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.booksection{min-width:0}.sectiontitle{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:800;margin:0 0 8px 2px;min-height:28px;display:flex;align-items:flex-end}.bookbtn{display:block;width:100%;border:0;background:transparent;color:var(--text);text-align:left;font:inherit;font-size:14px;line-height:1.15;padding:8px 5px;border-radius:7px;margin:1px 0}.bookbtn.current{background:#2b3531;font-weight:800}.bookbtn.selected{background:#4a4331;color:var(--cream);font-weight:800}.chapterpanel{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.chapterheading{font-size:22px;font-weight:700;margin-bottom:6px}.chapterhint{font-size:13px;color:var(--muted);margin-bottom:10px}.chaptergrid,.versegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}.numbtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:14px 0;font:inherit;font-weight:600;font-size:17px}.numbtn.current{outline:2px solid var(--gold);color:var(--gold)}.versepage{padding:24px 18px 30px}.verseheading{font-size:28px;font-weight:700;margin-bottom:20px}.loadingpick{color:var(--muted);font-size:14px;margin-top:14px}
+.shareoverlay{position:fixed;inset:0;background:#000b;z-index:100;display:none;place-items:center;padding:20px}.shareoverlay.show{display:grid}.sharedialog{position:relative;width:min(100%,380px);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center;box-shadow:0 18px 60px #0008}.shareclose{position:absolute;right:11px;top:8px;border:0;background:transparent;color:var(--muted);font-size:30px;line-height:1;padding:5px 8px}.sharetitle{font-size:22px;font-weight:800;color:var(--cream)}.sharesubtitle{font-size:14px;color:var(--muted);margin:5px 0 16px}.shareqr{display:block;width:min(72vw,270px);height:auto;margin:0 auto;background:white;border-radius:12px;padding:8px}.sharelink{font-size:12px;color:var(--muted);margin:14px 0;overflow-wrap:anywhere}.sharebuttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sharebuttons button{font:inherit;font-weight:700;color:var(--text);padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}.sharestatus{min-height:18px;margin-top:8px;font-size:12px;color:var(--gold)}
+.settingsbody{max-width:760px;margin:auto;padding:18px 16px 50px}.settings-section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}.settings-section h2{font-size:16px;margin:0 0 12px;color:var(--cream)}.settingrow{margin:12px 0}.settingrow label{display:block;font-size:12px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}.settingrow select{width:100%;font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px}.checkrow{display:flex;align-items:center;gap:10px;padding:8px 0}.checkrow input{width:19px;height:19px;accent-color:var(--gold)}.settingsnote{font-size:12px;color:var(--muted);line-height:1.45}.aboutline{line-height:1.55;margin:4px 0}.resetbtn{width:100%;font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px;margin-top:4px}
 @media(max-width:380px){.bookbtn{font-size:12px;padding-left:3px;padding-right:3px}.bookcolumns{gap:5px}.booklist{padding-left:9px;padding-right:9px}}
-.numbtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:14px 0;font:inherit;font-weight:600;font-size:17px}
-.numbtn.current{outline:2px solid var(--gold);color:var(--gold)}
-.versepage{padding:24px 18px 30px}
-.verseheading{font-size:28px;font-weight:700;margin-bottom:20px}
-.loadingpick{color:var(--muted);font-size:14px;margin-top:14px}
-@media(max-width:420px){.chaptergrid,.versegrid{grid-template-columns:repeat(5,1fr)}}
-
-.wordstudy{margin-top:12px}
-.wordrow{padding:12px 0;border-top:1px solid var(--line)}
-.wordrow:first-child{border-top:0;padding-top:4px}
-.originalword{font-family:Georgia,serif;font-size:23px;font-weight:700}
-.wordmeta{font-size:13px;color:var(--muted);margin-left:6px}
-.wordmeaning{margin-top:5px;line-height:1.45}
-.wordgrammar{font-size:12px;color:var(--muted);margin-top:4px}
-.wordsource{font-size:11px;color:#8f9b95;margin-top:7px}
-.wordloading{font-size:13px;color:var(--muted);margin-top:6px}
-.shareicon{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:white;padding:5px;display:grid;place-items:center;flex:0 0 auto}
-.shareicon img{display:block;width:27px;height:27px}
-.shareoverlay{position:fixed;inset:0;background:#000b;z-index:100;display:none;place-items:center;padding:20px}
-.shareoverlay.show{display:grid}
-.sharedialog{position:relative;width:min(100%,380px);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center;box-shadow:0 18px 60px #0008}
-.shareclose{position:absolute;right:11px;top:8px;border:0;background:transparent;color:var(--muted);font-size:30px;line-height:1;padding:5px 8px}
-.sharetitle{font-size:22px;font-weight:800;color:var(--cream)}
-.sharesubtitle{font-size:14px;color:var(--muted);margin:5px 0 16px}
-.shareqr{display:block;width:min(72vw,270px);height:auto;margin:0 auto;background:white;border-radius:12px;padding:8px}
-.sharelink{font-size:12px;color:var(--muted);margin:14px 0;overflow-wrap:anywhere}
-.sharebuttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.sharebuttons button{font:inherit;font-weight:700;color:var(--text);padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
-.sharestatus{min-height:18px;margin-top:8px;font-size:12px;color:var(--gold)}
-</style></head>
+</style>
+</head>
 <body>
 <header>
-  <div class="toprow">
-    <div>
-      <h1>Verse Study</h1>
-      <div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div>
-      <div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 12, 2026 · V4.4</div>
-    </div>
-    <button id="openShare" class="shareicon" aria-label="Share Verse Study" title="Share Verse Study"><img src="share-qr.svg" alt=""></button>
+ <div class="toprow">
+  <div><h1>Verse Study</h1><div id="headerRef" class="small">John 8:1 · ESV / NLT / MSG</div><div style="font-size:10px;opacity:.65;margin-top:2px">Build: Sep 13, 2026 · V4.5</div></div>
+  <div class="header-actions">
+   <button id="openSettings" class="iconbtn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.97 19.36a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.04A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10 3.01V3h4v.01a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 7l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21v4h-.04A1.7 1.7 0 0 0 19.4 15z"/></svg></button>
+   <button id="openShare" class="shareicon" aria-label="Share Verse Study" title="Share Verse Study"><img src="share-qr.svg" alt=""></button>
   </div>
+ </div>
 </header>
+<div class="wrap"><div class="quickbar"><div class="picker-launch"><button id="openPicker">📖 <span id="pickerLabel">John 8:1</span></button></div><button id="bookmarkBtn" class="bookmarkicon" aria-label="Toggle bookmark" title="Toggle bookmark"><svg viewBox="0 0 24 24"><path d="M6 4.75A1.75 1.75 0 0 1 7.75 3h8.5A1.75 1.75 0 0 1 18 4.75V21l-6-4-6 4V4.75z"/></svg></button></div><div id="bookmarkLabel" class="bookmarknote">No bookmark saved</div><div id="study"></div></div>
+<div class="bottom"><button id="prev">← Previous</button><button id="cur">John 8:1</button><button id="next">Next →</button></div>
 
-<div class="wrap">
-  <div class="quickbar">
-    <div class="picker-launch"><button id="openPicker">📖 <span id="pickerLabel">John 8:1</span></button></div>
-    <button id="bookmarkBtn" class="bookmarkicon" aria-label="Toggle bookmark" title="Toggle bookmark">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.75A1.75 1.75 0 0 1 7.75 3h8.5A1.75 1.75 0 0 1 18 4.75V21l-6-4-6 4V4.75z"/></svg>
-    </button>
-  </div>
-  <div id="bookmarkLabel" class="bookmarknote">No bookmark saved</div>
-    <div id="study"></div>
+<div id="shareOverlay" class="shareoverlay" aria-hidden="true"><div class="sharedialog" role="dialog" aria-modal="true" aria-labelledby="shareTitle"><button id="closeShare" class="shareclose" aria-label="Close">×</button><div id="shareTitle" class="sharetitle">Share Verse Study</div><div class="sharesubtitle">Scan this code with a phone camera</div><img class="shareqr" src="share-qr.svg" alt="QR code for Verse Study"><div class="sharelink">jkharris27.github.io/Verse-Study/</div><div class="sharebuttons"><button id="nativeShare">Share link</button><button id="copyShare">Copy link</button></div><div id="shareStatus" class="sharestatus" aria-live="polite"></div></div></div>
+
+<div id="settingsOverlay" class="overlay" aria-hidden="true">
+ <div class="pickerhead"><button class="backbtn" id="closeSettings">←</button><div class="pickertitle">Settings</div></div>
+ <div class="settingsbody">
+  <section class="settings-section"><h2>Bible versions</h2><div class="settingsnote">Choose which translation fills each reading style. Public-domain choices are included alongside the current defaults.</div>
+   <div class="settingrow"><label for="preciseVersion">Precise</label><select id="preciseVersion"></select></div>
+   <div class="settingrow"><label for="looseVersion">Loose</label><select id="looseVersion"></select></div>
+   <div class="settingrow"><label for="paraphraseVersion">Paraphrase</label><select id="paraphraseVersion"></select></div>
+  </section>
+  <section class="settings-section"><h2>Commentaries</h2><div class="settingsnote">Choose which commentary cards appear in the study.</div>
+   <label class="checkrow"><input type="checkbox" id="showHenry"> <span>Matthew Henry Concise</span></label>
+   <label class="checkrow"><input type="checkbox" id="showSda"> <span>SDA Bible Commentary</span></label>
+   <label class="checkrow"><input type="checkbox" id="showAi"> <span>AI Commentary</span></label>
+  </section>
+  <section class="settings-section"><h2>About Verse Study</h2><div class="aboutline">A phone-first Bible study app for comparing translations, original-language word study, and commentary.</div><div class="aboutline"><b>Builder:</b> jkharris27</div><div class="aboutline"><b>Version:</b> V4.5</div><div class="settingsnote">Settings are saved on this device.</div></section>
+  <button id="resetSettings" class="resetbtn">Restore default settings</button>
+ </div>
 </div>
 
-<div class="bottom">
-  <button id="prev">← Previous</button>
-  <button id="cur">John 8:1</button>
-  <button id="next">Next →</button>
-</div>
-
-<div id="shareOverlay" class="shareoverlay" aria-hidden="true">
-  <div class="sharedialog" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
-    <button id="closeShare" class="shareclose" aria-label="Close">×</button>
-    <div id="shareTitle" class="sharetitle">Share Verse Study</div>
-    <div class="sharesubtitle">Scan this code with a phone camera</div>
-    <img class="shareqr" src="share-qr.svg" alt="QR code for Verse Study">
-    <div class="sharelink">jkharris27.github.io/Verse-Study/</div>
-    <div class="sharebuttons">
-      <button id="nativeShare">Share link</button>
-      <button id="copyShare">Copy link</button>
-    </div>
-    <div id="shareStatus" class="sharestatus" aria-live="polite"></div>
-  </div>
-</div>
-
-<div id="pickerOverlay" class="overlay" aria-hidden="true">
-  <div id="booksScreen">
-    <div class="pickerhead"><button class="backbtn" id="closePicker">←</button><div class="pickertitle">Books</div></div>
-    <div class="booklist">
-      <div class="testamenttabs">
-        <button id="otTab">Old Testament</button>
-        <button id="ntTab">New Testament</button>
-      </div>
-      <div id="bookColumns" class="bookcolumns"></div>
-      <div id="chapterPanel" class="chapterpanel" style="display:none">
-        <div id="chapterHeading" class="chapterheading"></div>
-        <div class="chapterhint">Select chapter</div>
-        <div id="chapterGrid" class="chaptergrid"></div>
-      </div>
-    </div>
-  </div>
-  <div id="verseScreen" style="display:none">
-    <div class="pickerhead"><button class="backbtn" id="backToBooks">←</button><div class="pickertitle">Select Verse</div></div>
-    <div class="versepage">
-      <div id="verseHeading" class="verseheading"></div>
-      <div id="verseGrid" class="versegrid"></div>
-      <div id="pickerLoading" class="loadingpick"></div>
-    </div>
-  </div>
-</div>
+<div id="pickerOverlay" class="overlay" aria-hidden="true"><div id="booksScreen"><div class="pickerhead"><button class="backbtn" id="closePicker">←</button><div class="pickertitle">Books</div></div><div class="booklist"><div class="testamenttabs"><button id="otTab">Old Testament</button><button id="ntTab">New Testament</button></div><div id="bookColumns" class="bookcolumns"></div><div id="chapterPanel" class="chapterpanel" style="display:none"><div id="chapterHeading" class="chapterheading"></div><div class="chapterhint">Select chapter</div><div id="chapterGrid" class="chaptergrid"></div></div></div></div><div id="verseScreen" style="display:none"><div class="pickerhead"><button class="backbtn" id="backToBooks">←</button><div class="pickertitle">Select Verse</div></div><div class="versepage"><div id="verseHeading" class="verseheading"></div><div id="verseGrid" class="versegrid"></div><div id="pickerLoading" class="loadingpick"></div></div></div></div>
 
 <script>
-const $=id=>document.getElementById(id);
-const SHARE_URL='https://jkharris27.github.io/Verse-Study/';
-const BOOKS=[{"id": 1, "name": "Genesis", "chapters": 50}, {"id": 2, "name": "Exodus", "chapters": 40}, {"id": 3, "name": "Leviticus", "chapters": 27}, {"id": 4, "name": "Numbers", "chapters": 36}, {"id": 5, "name": "Deuteronomy", "chapters": 34}, {"id": 6, "name": "Joshua", "chapters": 24}, {"id": 7, "name": "Judges", "chapters": 21}, {"id": 8, "name": "Ruth", "chapters": 4}, {"id": 9, "name": "1 Samuel", "chapters": 31}, {"id": 10, "name": "2 Samuel", "chapters": 24}, {"id": 11, "name": "1 Kings", "chapters": 22}, {"id": 12, "name": "2 Kings", "chapters": 25}, {"id": 13, "name": "1 Chronicles", "chapters": 29}, {"id": 14, "name": "2 Chronicles", "chapters": 36}, {"id": 15, "name": "Ezra", "chapters": 10}, {"id": 16, "name": "Nehemiah", "chapters": 13}, {"id": 17, "name": "Esther", "chapters": 10}, {"id": 18, "name": "Job", "chapters": 42}, {"id": 19, "name": "Psalms", "chapters": 150}, {"id": 20, "name": "Proverbs", "chapters": 31}, {"id": 21, "name": "Ecclesiastes", "chapters": 12}, {"id": 22, "name": "Song of Solomon", "chapters": 8}, {"id": 23, "name": "Isaiah", "chapters": 66}, {"id": 24, "name": "Jeremiah", "chapters": 52}, {"id": 25, "name": "Lamentations", "chapters": 5}, {"id": 26, "name": "Ezekiel", "chapters": 48}, {"id": 27, "name": "Daniel", "chapters": 12}, {"id": 28, "name": "Hosea", "chapters": 14}, {"id": 29, "name": "Joel", "chapters": 3}, {"id": 30, "name": "Amos", "chapters": 9}, {"id": 31, "name": "Obadiah", "chapters": 1}, {"id": 32, "name": "Jonah", "chapters": 4}, {"id": 33, "name": "Micah", "chapters": 7}, {"id": 34, "name": "Nahum", "chapters": 3}, {"id": 35, "name": "Habakkuk", "chapters": 3}, {"id": 36, "name": "Zephaniah", "chapters": 3}, {"id": 37, "name": "Haggai", "chapters": 2}, {"id": 38, "name": "Zechariah", "chapters": 14}, {"id": 39, "name": "Malachi", "chapters": 4}, {"id": 40, "name": "Matthew", "chapters": 28}, {"id": 41, "name": "Mark", "chapters": 16}, {"id": 42, "name": "Luke", "chapters": 24}, {"id": 43, "name": "John", "chapters": 21}, {"id": 44, "name": "Acts", "chapters": 28}, {"id": 45, "name": "Romans", "chapters": 16}, {"id": 46, "name": "1 Corinthians", "chapters": 16}, {"id": 47, "name": "2 Corinthians", "chapters": 13}, {"id": 48, "name": "Galatians", "chapters": 6}, {"id": 49, "name": "Ephesians", "chapters": 6}, {"id": 50, "name": "Philippians", "chapters": 4}, {"id": 51, "name": "Colossians", "chapters": 4}, {"id": 52, "name": "1 Thessalonians", "chapters": 5}, {"id": 53, "name": "2 Thessalonians", "chapters": 3}, {"id": 54, "name": "1 Timothy", "chapters": 6}, {"id": 55, "name": "2 Timothy", "chapters": 4}, {"id": 56, "name": "Titus", "chapters": 3}, {"id": 57, "name": "Philemon", "chapters": 1}, {"id": 58, "name": "Hebrews", "chapters": 13}, {"id": 59, "name": "James", "chapters": 5}, {"id": 60, "name": "1 Peter", "chapters": 5}, {"id": 61, "name": "2 Peter", "chapters": 3}, {"id": 62, "name": "1 John", "chapters": 5}, {"id": 63, "name": "2 John", "chapters": 1}, {"id": 64, "name": "3 John", "chapters": 1}, {"id": 65, "name": "Jude", "chapters": 1}, {"id": 66, "name": "Revelation", "chapters": 22}];
-const bookById=id=>BOOKS.find(b=>b.id===Number(id));
-const SAFE_STORAGE={
- getItem:k=>{try{return localStorage.getItem(k)}catch{return null}},
- setItem:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}
-};
-let current={book:43,chapter:8,verse:1};
-let currentESVText='';
-const HENRY_BOOKS={"1":"genesis","2":"exodus","3":"leviticus","4":"numbers","5":"deuteronomy","6":"joshua","7":"judges","8":"ruth","9":"1-samuel","10":"2-samuel","11":"1-kings","12":"2-kings","13":"1-chronicles","14":"2-chronicles","15":"ezra","16":"nehemiah","17":"esther","18":"job","19":"psalms","20":"proverbs","21":"ecclesiastes","22":"song-of-solomon","23":"isaiah","24":"jeremiah","25":"lamentations","26":"ezekiel","27":"daniel","28":"hosea","29":"joel","30":"amos","31":"obadiah","32":"jonah","33":"micah","34":"nahum","35":"habakkuk","36":"zephaniah","37":"haggai","38":"zechariah","39":"malachi","40":"matthew","41":"mark","42":"luke","43":"john","44":"acts","45":"romans","46":"1-corinthians","47":"2-corinthians","48":"galatians","49":"ephesians","50":"philippians","51":"colossians","52":"1-thessalonians","53":"2-thessalonians","54":"1-timothy","55":"2-timothy","56":"titus","57":"philemon","58":"hebrews","59":"james","60":"1-peter","61":"2-peter","62":"1-john","63":"2-john","64":"3-john","65":"jude","66":"revelation"};
-const SDA_VOLUME_RANGES=[
-  [1,1,5],[2,6,12],[3,13,22],[4,23,39],[5,40,43],[6,44,49],[7,50,66]
-];
-const SDA_ARCHIVE_NAMES={
-  9:'1-Samuel',10:'2-Samuel',11:'1-Kings',12:'2-Kings',
-  13:'1-Chronicles',14:'2-Chronicles',
-  22:'The Song of Solomon',25:'Lamentations of Jeremiah',
-  50:'Phillippians'
-};
-function sdaFileInfo(bookId){
- const range=SDA_VOLUME_RANGES.find(([,first,last])=>bookId>=first&&bookId<=last);
- const book=bookById(bookId);
- // The archive currently has no separate OCR book files for 2 or 3 John.
- if(!range||!book||bookId===63||bookId===64)return null;
- const volume=range[0],number=String(bookId).padStart(2,'0');
- const archiveName=SDA_ARCHIVE_NAMES[bookId]||book.name;
- return {volume,file:`SdaBc-${volume} (${number}) ${archiveName}`};
-}
-const STEP_GREEK_BOOKS={
-  40:'Matt',41:'Mark',42:'Luke',43:'John',44:'Acts',45:'Rom',46:'1Cor',47:'2Cor',
-  48:'Gal',49:'Eph',50:'Phil',51:'Col',52:'1Thess',53:'2Thess',54:'1Tim',55:'2Tim',
-  56:'Titus',57:'Phlm',58:'Heb',59:'Jas',60:'1Pet',61:'2Pet',62:'1John',63:'2John',
-  64:'3John',65:'Jude',66:'Rev'
-};
-const OSHB_BOOKS={
-  1:'Gen',2:'Exod',3:'Lev',4:'Num',5:'Deut',6:'Josh',7:'Judg',8:'Ruth',9:'1Sam',10:'2Sam',
-  11:'1Kgs',12:'2Kgs',13:'1Chr',14:'2Chr',15:'Ezra',16:'Neh',17:'Esth',18:'Job',19:'Ps',
-  20:'Prov',21:'Eccl',22:'Song',23:'Isa',24:'Jer',25:'Lam',26:'Ezek',27:'Dan',28:'Hos',
-  29:'Joel',30:'Amos',31:'Obad',32:'Jonah',33:'Mic',34:'Nah',35:'Hab',36:'Zeph',37:'Hag',38:'Zech',39:'Mal'
-};
-
-let translationToken=0;
-let pickerBook=null,pickerChapter=null; let pickerTestament=current.book<=39?'OT':'NT';
-
-function validLocation(x){
- const b=bookById(x?.book);
- return !!(b && Number(x.chapter)>=1 && Number(x.chapter)<=b.chapters && Number(x.verse)>=1);
-}
-function loadLocation(key){
- try{const x=JSON.parse(SAFE_STORAGE.getItem(key)||'null');return validLocation(x)?x:null}catch{return null}
-}
-const saved=loadLocation('verseStudy.lastLocation') || (()=>{
- const v=Number(SAFE_STORAGE.getItem('verseStudy.lastJohn8Verse'));
- return v>=1&&v<=59?{book:43,chapter:8,verse:v}:null;
-})();
-if(saved)current=saved;
-
-function refOf(x=current){return `${bookById(x.book).name} ${x.chapter}:${x.verse}`}
-function cacheKey(type,x=current){return `vs24_${type}_${x.book}_${x.chapter}_${x.verse}`}
-function countKey(book,chapter){return `vs24_count_${book}_${chapter}`}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-
-function setTrans(id,text,ok=true){
- const el=$(id);if(!el)return;el.innerHTML=`<div class="${ok?'':'small'}">${esc(text)}</div>`;
-}
-async function publicVerse(type,x){
- const ck=cacheKey(type,x),cached=SAFE_STORAGE.getItem(ck);
- if(cached)return {text:cached,cached:true};
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),6500);
- try{
-  const r=await fetch(`https://bolls.life/get-verse/${type}/${x.book}/${x.chapter}/${x.verse}/`,{signal:ctrl.signal,cache:'no-store'});
-  if(!r.ok)throw new Error(`${type} source returned ${r.status}`);
-  const j=await r.json();
-  let raw=Array.isArray(j)?((j[0]&&j[0].text)||''):(j.text||j.content||'');
-  const box=document.createElement('div');box.innerHTML=String(raw||'');
-  const text=(box.textContent||box.innerText||'').replace(/\s+/g,' ').trim();
-  if(!text)throw new Error(`${type} returned no verse text`);
-  SAFE_STORAGE.setItem(ck,text);return {text,cached:false};
- }finally{clearTimeout(timer)}
-}
-async function loadPreferredTranslations(x){
- const token=++translationToken;
- [['esvText','ESV'],['nltText','NLT'],['msgText','MSG']].forEach(async([id,type])=>{
-  try{
-    const r=await publicVerse(type,x);
-    if(token===translationToken){
-      setTrans(id,r.text,true);
-      if(type==='ESV'){
-        currentESVText=r.text;
-        loadWordStudy({...x});
-      }
-    }
-  }
-  catch(e){if(token!==translationToken)return;setTrans(id,e.name==='AbortError'?`${type} is taking too long. Tap the current verse to retry.`:`${type} could not load. Tap the current verse to retry.`,false)}
- });
-}
-
-function wordScore(w){
- let m=String(w.morph||'').toUpperCase(),score=0;
- if(/N-|V-|A-/.test(m))score+=5;
- if(/PREP|CONJ|PRT|T-|PRON/.test(m))score-=4;
- if(String(w.metadata?.gloss||'').length>3)score++;
- return score;
-}
-function cleanStrong(w){
- const x=Array.isArray(w.strongs)?w.strongs[0]:(w.strongs||'');
- return String(x).replace(/[A-Z]$/,'');
-}
-function transliteration(w){
- const raw=w.source?.raw||'';
- const m=raw.match(/\(([^)]+)\)/);
- return m?m[1]:'';
-}
-function morphExplanation(m){
- m=String(m||'').replace(/^robinson:/,'');
- const p=m.split('-'),tag=p[0]||'';
- const map={N:'noun',V:'verb',A:'adjective',ADV:'adverb',P:'pronoun',D:'demonstrative',T:'article',PREP:'preposition',CONJ:'conjunction'};
- let out=map[tag]||tag.toLowerCase();
- if(tag==='V'&&p[1]){
-   const tense={P:'present',I:'imperfect',F:'future',A:'aorist',R:'perfect',L:'pluperfect','2A':'second aorist'}[p[1]]||'';
-   if(tense)out+=` · ${tense}`;
- }
- return out;
-}
-async function greekWordData(x){
- const code=STEP_GREEK_BOOKS[x.book];
- if(!code)throw new Error('Greek source not mapped');
- const url=`https://raw.githubusercontent.com/metaxiamultimedia/scriptures-js-source-stepbible-tagnt-tr/main/data/stepbible-tagnt-tr/${code}/${x.chapter}/${x.verse}.json`;
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),6500);
- try{
-   const r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
-   if(!r.ok)throw new Error('Greek source '+r.status);
-   return await r.json();
- }finally{clearTimeout(timer)}
-}
-
-async function cachedSourceText(url,cacheName){
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
- try{
-  if('caches' in window){
-   const cache=await caches.open(cacheName),saved=await cache.match(url);
-   if(saved)return await saved.text();
-   const r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
-   if(!r.ok)throw new Error('source '+r.status);
-   await cache.put(url,r.clone());return await r.text();
-  }
-  const r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
-  if(!r.ok)throw new Error('source '+r.status);
-  return await r.text();
- }finally{clearTimeout(timer)}
-}
-function hebrewStrong(lemma){
- const parts=String(lemma||'').split('/');
- const m=(parts[parts.length-1]||'').match(/\d+/);
- return m?'H'+String(Number(m[0])):'';
-}
-function hebrewGrammar(morph){
- const core=String(morph||'').split('/').pop().replace(/^H/,'');
- const type=core[0]||'';
- const types={N:'noun',V:'verb',A:'adjective',P:'pronoun',R:'preposition',C:'conjunction',D:'adverb',T:'particle'};
- let out=types[type]||'Hebrew word';
- if(type==='V'){
-  const stems={q:'Qal',N:'Niphal',p:'Piel',P:'Pual',h:'Hiphil',H:'Hophal',t:'Hithpael'};
-  const forms={p:'perfect',q:'sequential perfect',i:'imperfect',w:'sequential imperfect',h:'cohortative',j:'jussive',v:'imperative',r:'participle'};
-  if(stems[core[1]])out+=` · ${stems[core[1]]}`;
-  if(forms[core[2]])out+=` · ${forms[core[2]]}`;
- }
- const gender=core.includes('m')?'masculine':core.includes('f')?'feminine':'';
- const number=core.includes('p')?'plural':core.includes('d')?'dual':core.includes('s')?'singular':'';
- if(type!=='V'&&gender)out+=` · ${gender}`;
- if(type!=='V'&&number)out+=` · ${number}`;
- return out;
-}
-function hebrewWordScore(w){
- const core=String(w.morph||'').split('/').pop().replace(/^H/,'');
- return /^[NVA]/.test(core)?5:/^[PRCTD]/.test(core)?-4:0;
-}
-async function hebrewWordData(x){
- const code=OSHB_BOOKS[x.book];if(!code)throw new Error('Hebrew source not mapped');
- const bookUrl=`https://raw.githubusercontent.com/openscriptures/morphhb/master/wlc/${code}.xml`;
- const xml=await cachedSourceText(bookUrl,'verse-study-hebrew-books-v1');
- const doc=new DOMParser().parseFromString(xml,'application/xml');
- const verse=Array.from(doc.getElementsByTagNameNS('*','verse')).find(v=>v.getAttribute('osisID')===`${code}.${x.chapter}.${x.verse}`);
- if(!verse)throw new Error('Hebrew verse not found');
- const words=Array.from(verse.getElementsByTagNameNS('*','w')).map(w=>({
-  text:(w.textContent||'').replaceAll('/',''),lemma:w.getAttribute('lemma')||'',morph:w.getAttribute('morph')||''
- }));
- const lexUrl='https://raw.githubusercontent.com/openscriptures/HebrewLexicon/master/HebrewStrong.xml';
- const lexText=await cachedSourceText(lexUrl,'verse-study-hebrew-lexicon-v1');
- const lexDoc=new DOMParser().parseFromString(lexText,'application/xml');
- const entries=new Map(Array.from(lexDoc.getElementsByTagNameNS('*','entry')).map(e=>[e.getAttribute('id'),e]));
- return words.map(w=>{
-  const strong=hebrewStrong(w.lemma),entry=strong?entries.get(strong):null;
-  const head=entry?.getElementsByTagNameNS('*','w')[0];
-  const meaning=entry?.getElementsByTagNameNS('*','meaning')[0]?.textContent?.replace(/\s+/g,' ').trim()||'';
-  const usage=entry?.getElementsByTagNameNS('*','usage')[0]?.textContent?.replace(/\s+/g,' ').trim()||'';
-  return {...w,strong,xlit:head?.getAttribute('xlit')||'',pron:head?.getAttribute('pron')||'',meaning,usage};
- });
-}
-
-function normEnglish(t){
- return String(t||'').toLowerCase().replace(/[“”‘’"'.,;:!?()[\]{}—–-]/g,' ').replace(/\s+/g,' ').trim();
-}
-function esvVerseWord(w){
- const esv=String(currentESVText||'').trim();
- if(!esv)return '';
- const candidates=[
-   w.translation,
-   w.metadata?.gloss,
-   w.metadata?.subMeaning
- ].filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
-
- // Only claim an ESV word/phrase when the STEP contextual English or gloss
- // actually occurs in the displayed ESV text. This avoids falsely labeling
- // a different English rendering as ESV.
- const nesv=' '+normEnglish(esv)+' ';
- for(const c of candidates){
-   const nc=normEnglish(c);
-   if(nc && nesv.includes(' '+nc+' ')){
-     const words=esv.split(/\s+/);
-     const target=nc.split(' ');
-     for(let i=0;i<words.length;i++){
-       const piece=words.slice(i,i+target.length).join(' ');
-       if(normEnglish(piece)===nc) return piece.replace(/^[“"'([{]+|[”"')\]},.;:!?]+$/g,'');
-     }
-     return c;
-   }
- }
- return '';
-}
-
-async function loadWordStudy(x){
- const el=$('wordStudy'),title=$('wordStudyTitle');if(!el||!title)return;
- const isNT=x.book>=40;
- title.textContent=isNT?'Word Study · Greek':'Word Study · Hebrew';
- if(!isNT){
-   el.textContent='Loading Hebrew word study…';
-   try{
-    const arr=(await hebrewWordData(x)).sort((a,b)=>hebrewWordScore(b)-hebrewWordScore(a));
-    const chosen=[],seen=new Set();
-    for(const w of arr){
-     if(hebrewWordScore(w)<1||!w.strong||seen.has(w.strong))continue;
-     seen.add(w.strong);chosen.push(w);if(chosen.length===5)break;
-    }
-    if(!chosen.length){el.textContent='No key lexical entries found for this verse.';return}
-    el.innerHTML=chosen.map(w=>{
-     const candidates=(w.usage||w.meaning).split(/[,;()]/).map(s=>s.replace(/[×]/g,'').trim()).filter(Boolean);
-     const esv=candidates.map(c=>({c,n:normEnglish(c)})).find(({n})=>n&&(' '+normEnglish(currentESVText)+' ').includes(' '+n+' '))?.c||'—';
-     const sense=w.meaning||w.usage||'Definition unavailable';
-     const grammar=hebrewGrammar(w.morph);
-     return `<div class="wordrow">
-      <div><span class="originalword" dir="rtl">${esc(w.text)}</span>${w.xlit?`<span class="wordmeta">${esc(w.xlit)}</span>`:''}<span class="wordmeta">${esc(w.strong)}</span></div>
-      <div class="wordmeaning"><b>ESV word:</b> ${esc(esv)} &nbsp; <b>Meaning:</b> ${esc(sense)}</div>
-      <div class="wordmeaning"><b>Word study:</b> This ${esc(grammar)} carries the lexical sense “${esc(sense)}.”</div>
-      <div class="wordgrammar"><b>Grammar:</b> ${esc(grammar)}${w.pron?` · Pronounced ${esc(w.pron)}`:''}</div>
-     </div>`;
-    }).join('');
-   }catch(e){
-    el.innerHTML='<div class="small">Hebrew word study could not load. The verse translations are unaffected.</div>';
-   }
-   return;
- }
- el.textContent='Loading Greek word study…';
- try{
-   const d=await greekWordData(x);
-   const arr=(d.words||[]).filter(w=>w.strongs).sort((a,b)=>wordScore(b)-wordScore(a));
-   const chosen=[],seen=new Set();
-   for(const w of arr){
-     const strong=cleanStrong(w);
-     if(wordScore(w)<1||!strong||seen.has(strong))continue;
-     seen.add(strong);chosen.push(w);if(chosen.length===5)break;
-   }
-   if(!chosen.length){el.textContent='No key lexical entries found for this verse.';return}
-   el.innerHTML=chosen.map(w=>{
-     const lemma=w.lemma||w.text||'',tr=transliteration(w),strong=cleanStrong(w);
-     const basic=w.metadata?.gloss||w.metadata?.subMeaning||w.translation||'';
-     const context=w.translation||'',grammar=morphExplanation(w.morph);
-     return `<div class="wordrow">
-       <div><span class="originalword">${esc(lemma)}</span>${tr?`<span class="wordmeta">${esc(tr)}</span>`:''}<span class="wordmeta">${esc(strong)}</span></div>
-       <div class="wordmeaning"><b>ESV word:</b> ${esc(esvVerseWord(w)||'—')} &nbsp; <b>Meaning:</b> ${esc(basic||context||'—')}</div>
-       <div class="wordmeaning"><b>Word study:</b> ${esc(
-         (basic||context)
-           ? `This ${grammar||'word'} carries the sense “${basic||context}”${context&&context!==basic?` and is used here as “${context}”`:''}.`
-           : `This is a ${grammar||'word'} in the original Greek text.`
-       )}</div>
-       <div class="wordgrammar"><b>Grammar:</b> ${esc(grammar)}${w.morph?` · ${esc(String(w.morph).replace(/^robinson:/,''))}`:''}</div>
-     </div>`;
-   }).join('');
- }catch(e){
-   el.innerHTML='<div class="small">Greek word study could not load. The verse translations are unaffected.</div>';
- }
-}
-
-
-function parseHenryCommentary(md,verse){
- const body=String(md||'').replace(/^---[\s\S]*?---/,'');
- const re=/## Verses?\s+(\d+)(?:[–-](\d+))?\s*\n\n([\s\S]*?)(?=\n## |$)/g;
- let m;
- while((m=re.exec(body))){
-   const a=Number(m[1]),b=Number(m[2]||m[1]);
-   if(verse>=a&&verse<=b){
-     const text=m[3]
-       .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
-       .replace(/[*_#>`]/g,'')
-       .replace(/\s+/g,' ')
-       .trim();
-     return {text,a,b};
-   }
- }
- return null;
-}
-async function loadCommonCommentary(x){
- const el=$('commonCommentary');if(!el)return;
- el.textContent='Loading commentary…';
- const slug=HENRY_BOOKS[x.book];
- if(!slug){el.textContent='Commentary is not available for this book.';return}
- try{
-   const ck=`vs34_henry_${x.book}_${x.chapter}`;
-   let md=SAFE_STORAGE.getItem(ck);
-   if(!md){
-     const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),6500);
-     try{
-       const r=await fetch(`https://raw.githubusercontent.com/lyteword/mhenry-concise/main/${slug}/chapter-${x.chapter}.md`,{signal:ctrl.signal,cache:'force-cache'});
-       if(!r.ok)throw new Error('commentary '+r.status);
-       md=await r.text();
-       SAFE_STORAGE.setItem(ck,md);
-     }finally{clearTimeout(timer)}
-   }
-   const result=parseHenryCommentary(md,x.verse);
-   const title=$('commonCommentaryTitle');
-   if(result){
-     const book=bookById(x.book).name;
-     const range=result.a===result.b
-       ? `${book} ${x.chapter}:${result.a}`
-       : `${book} ${x.chapter}:${result.a}–${result.b}`;
-     if(title) title.textContent=`Common Commentary · Matthew Henry Concise · ${range}`;
-     el.textContent=result.text;
-   }else{
-     if(title) title.textContent='Common Commentary · Matthew Henry Concise';
-     el.textContent='No separate comment was found for this verse.';
-   }
- }catch(e){
-   const title=$('commonCommentaryTitle');
-   if(title) title.textContent='Common Commentary · Matthew Henry Concise';
-   el.textContent='Common commentary could not load.';
- }
-}
-
-
-function normalizeSdaText(t){
- return String(t||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();
-}
-function extractSdaVerse(text,x){
- const t=normalizeSdaText(text);if(!t)return '';
- const chapterPatterns=[
-   new RegExp(`\\bCHAPTER\\s+${x.chapter}\\b`,'i'),
-   new RegExp(`\\bChapter\\s+${x.chapter}\\b`,'i'),
-   new RegExp(`\\n${x.chapter}\\s*\\n`)
- ];
- let start=0;
- for(const p of chapterPatterns){const m=t.match(p);if(m){start=m.index;break}}
- const rest=t.slice(start);
- const nm=rest.match(new RegExp(`\\bCHAPTER\\s+${x.chapter+1}\\b`,'i'));
- const chapterText=nm?rest.slice(0,nm.index):rest.slice(0,90000);
- const versePatterns=[
-   new RegExp(`(?:^|\\n)\\s*${x.verse}\\.\\s+`,'m'),
-   new RegExp(`(?:^|\\n)\\s*${x.verse}\\s*[-–—]\\s*`,'m'),
-   new RegExp(`\\bVerse\\s+${x.verse}\\b`,'i'),
-   new RegExp(`\\bVs?\\.\\s*${x.verse}\\b`,'i')
- ];
- let vm=null;
- for(const p of versePatterns){vm=chapterText.match(p);if(vm)break}
- if(!vm)return '';
- const after=chapterText.slice(vm.index);
- const next=after.slice(vm[0].length).match(/\n\s*\d{1,2}\.\s+/);
- let block=next?after.slice(0,vm[0].length+next.index):after.slice(0,2200);
- return block.replace(/\n+/g,' ').replace(/\s+/g,' ').trim().slice(0,2200);
-}
-async function loadSdaCommentary(x){
- const el=$('sdaCommentary'),title=$('sdaCommentaryTitle');if(!el||!title)return;
- title.textContent='SDA Commentary · SDA Bible Commentary';
- const info=sdaFileInfo(x.book);
- if(!info){
-   el.textContent='SDA Bible Commentary source is not connected for this book yet.';
-   return;
- }
- const verseKey=`vs39_sda_verse_${x.book}_${x.chapter}_${x.verse}`;
- const savedVerse=SAFE_STORAGE.getItem(verseKey);
- if(savedVerse){
-   title.textContent=`SDA Commentary · SDA Bible Commentary, vol. ${info.volume} · ${refOf(x)}`;
-   el.textContent=savedVerse;
-   return;
- }
- let tx='';
- try{
-   const base='https://archive.org/download/SdaBibleCommentary1980/';
-   const urls=[
-     `${base}${encodeURIComponent(info.file+'_djvu.txt')}`,
-     `${base}${encodeURIComponent(info.file+'.txt')}`
-   ];
-   for(const url of urls){
-     try{
-       const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),9000);
-       let r=null;
-       if('caches' in window){
-         const cache=await caches.open('verse-study-sda-books-v1');
-         r=await cache.match(url);
-         if(!r){
-           r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
-           if(r.ok)await cache.put(url,r.clone());
-         }
-       }else{
-         r=await fetch(url,{signal:ctrl.signal,cache:'force-cache'});
-       }
-       clearTimeout(timer);
-       if(r&&r.ok){tx=await r.text();break}
-     }catch(e){}
-   }
-   if(!tx){el.textContent='SDA commentary source could not load.';return}
-   const text=extractSdaVerse(tx,x);
-   if(text){
-     SAFE_STORAGE.setItem(verseKey,text);
-     title.textContent=`SDA Commentary · SDA Bible Commentary, vol. ${info.volume} · ${refOf(x)}`;
-     el.textContent=text;
-   }else{
-     el.textContent='No direct SDA Bible Commentary note was found for this verse.';
-   }
- }catch(e){
-   el.textContent='SDA commentary source could not load.';
- }
-}
-
-function updateBookmarkUI(){
- const bm=loadLocation('verseStudy.bookmark');
- const same=!!bm && bm.book===current.book&&bm.chapter===current.chapter&&bm.verse===current.verse;
- $('bookmarkBtn').classList.toggle('active',same);
- $('bookmarkBtn').setAttribute('aria-pressed',same?'true':'false');
- $('bookmarkLabel').textContent=bm?`Bookmark: ${refOf(bm)}`:'No bookmark saved';
-}
-const AI_WORKER='https://verse-study.jkharris27.workers.dev';
-
-async function loadAICommentary(x){
- const el=$('aiCommentary');
- if(!el)return;
-
- const cacheKeyAI=`vs_ai_${x.book}_${x.chapter}_${x.verse}`;
- const cached=SAFE_STORAGE.getItem(cacheKeyAI);
- if(cached){
-  el.textContent=cached;
-  return;
- }
-
- el.textContent='Generating AI commentary…';
- await new Promise(resolve=>setTimeout(resolve,1500)); 
-
- try{
-  const [esvResult,nltResult,msgResult]=await Promise.all([
-   publicVerse('ESV',x),
-   publicVerse('NLT',x),
-   publicVerse('MSG',x)
-  ]);
-
-  const r=await fetch(AI_WORKER,{
-   method:'POST',
-   headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({
-    reference:refOf(x),
-    esv:esvResult.text,
-    nlt:nltResult.text,
-    msg:msgResult.text,
-    commonCommentary:$('commonCommentary')?.textContent||'',
-    sdaCommentary:$('sdaCommentary')?.textContent||''
-   })
-  });
-
-  if(!r.ok)throw new Error('AI request failed');
-
-  const data=await r.json();
-  const text=String(data.commentary||'').trim();
-  if(!text)throw new Error('Empty AI response');
-
-  SAFE_STORAGE.setItem(cacheKeyAI,text);
-  el.textContent=text;
- }catch(e){
-  el.textContent='AI commentary could not load. Tap the current verse to try again.';
- }
-}
-  function render(){
- currentESVText='';
- const ref=refOf();
- $('cur').textContent=ref;$('pickerLabel').textContent=ref;$('headerRef').textContent=`${ref} · ESV / NLT / MSG`;
- $('study').innerHTML=`
- <article class="card"><div class="eyebrow">Precise · ESV</div><div id="esvText" class="note">Loading ESV…</div></article>
- <article class="card"><div class="eyebrow">Loose · NLT</div><div id="nltText" class="note">Loading NLT…</div></article>
- <article class="card"><div class="eyebrow">Paraphrase · MSG</div><div id="msgText" class="note">Loading MSG…</div></article>
- <article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>
- <article class="card"><div class="eyebrow" id="commonCommentaryTitle">Common Commentary · Matthew Henry Concise</div><div id="commonCommentary" class="wordloading">Loading commentary…</div></article>
- <article class="card"><div class="eyebrow" id="sdaCommentaryTitle">SDA Commentary · SDA Bible Commentary</div><div id="sdaCommentary" class="wordloading">Loading SDA commentary…</div></article>`;
- $('study').insertAdjacentHTML('beforeend','<article class="card"><div class="eyebrow">AI Commentary</div><div id="aiCommentary" class="wordloading">Generating AI commentary…</div></article>');
-  SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));loadAICommentary({...current});
- updateBookmarkUI();loadPreferredTranslations({...current});loadWordStudy({...current});loadCommonCommentary({...current});loadSdaCommentary({...current});
-}
+const $=id=>document.getElementById(id),SHARE_URL='https://jkharris27.github.io/Verse-Study/';
+const names=['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi','Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
+const chapters=[50,40,27,36,34,24,21,4,31,24,22,25,29,36,10,13,10,42,150,31,12,8,66,52,5,48,12,14,3,9,1,4,7,3,3,3,2,14,4,28,16,24,21,28,16,16,13,6,6,4,4,5,3,6,4,3,1,13,5,5,3,5,1,1,1,1,22];
+const BOOKS=names.map((name,i)=>({id:i+1,name,chapters:chapters[i]})),bookById=id=>BOOKS.find(b=>b.id===Number(id));
+const SAFE_STORAGE={getItem:k=>{try{return localStorage.getItem(k)}catch{return null}},setItem:(k,v)=>{try{localStorage.setItem(k,v)}catch{}},removeItem:k=>{try{localStorage.removeItem(k)}catch{}}};
+const VERSION_OPTIONS=[{code:'ESV',name:'English Standard Version',group:'Current'},{code:'NLT',name:'New Living Translation',group:'Current'},{code:'MSG',name:'The Message',group:'Current'},{code:'KJV',name:'King James Version',group:'Public domain'},{code:'ASV',name:'American Standard Version',group:'Public domain'},{code:'WEB',name:'World English Bible',group:'Public domain'},{code:'YLT',name:"Young's Literal Translation",group:'Public domain'},{code:'GNV',name:'Geneva Bible',group:'Public domain'}];
+const DEFAULT_SETTINGS={precise:'ESV',loose:'NLT',paraphrase:'MSG',showHenry:true,showSda:true,showAi:true};
+function loadSettings(){try{return {...DEFAULT_SETTINGS,...JSON.parse(SAFE_STORAGE.getItem('verseStudy.settings')||'{}')}}catch{return {...DEFAULT_SETTINGS}}}let settings=loadSettings();function saveSettings(){SAFE_STORAGE.setItem('verseStudy.settings',JSON.stringify(settings))}
+function buildVersionSelect(id,value){const el=$(id);el.innerHTML='';['Current','Public domain'].forEach(group=>{const og=document.createElement('optgroup');og.label=group;VERSION_OPTIONS.filter(v=>v.group===group).forEach(v=>{const o=document.createElement('option');o.value=v.code;o.textContent=`${v.code} · ${v.name}`;og.appendChild(o)});el.appendChild(og)});el.value=value}
+function syncSettingsUI(){buildVersionSelect('preciseVersion',settings.precise);buildVersionSelect('looseVersion',settings.loose);buildVersionSelect('paraphraseVersion',settings.paraphrase);$('showHenry').checked=settings.showHenry;$('showSda').checked=settings.showSda;$('showAi').checked=settings.showAi}
+['preciseVersion','looseVersion','paraphraseVersion'].forEach((id,i)=>{$(id).onchange=e=>{settings[['precise','loose','paraphrase'][i]]=e.target.value;saveSettings();render()}});['showHenry','showSda','showAi'].forEach((id,i)=>{$(id).onchange=e=>{settings[['showHenry','showSda','showAi'][i]]=e.target.checked;saveSettings();render()}});$('resetSettings').onclick=()=>{settings={...DEFAULT_SETTINGS};saveSettings();syncSettingsUI();render()};
+let current={book:43,chapter:8,verse:1},translationToken=0,pickerBook=null,pickerChapter=null,pickerTestament='NT';function validLocation(x){const b=bookById(x?.book);return !!(b&&Number(x.chapter)>=1&&Number(x.chapter)<=b.chapters&&Number(x.verse)>=1)}function loadLocation(key){try{const x=JSON.parse(SAFE_STORAGE.getItem(key)||'null');return validLocation(x)?x:null}catch{return null}}const saved=loadLocation('verseStudy.lastLocation');if(saved)current=saved;function refOf(x=current){return `${bookById(x.book).name} ${x.chapter}:${x.verse}`}function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function cacheKey(type,x=current){return `vs45_${type}_${x.book}_${x.chapter}_${x.verse}`}function countKey(book,chapter){return `vs45_count_${book}_${chapter}`}
+async function publicVerse(type,x){const ck=cacheKey(type,x),cached=SAFE_STORAGE.getItem(ck);if(cached)return {text:cached};const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),6500);try{const r=await fetch(`https://bolls.life/get-verse/${type}/${x.book}/${x.chapter}/${x.verse}/`,{signal:ctrl.signal,cache:'no-store'});if(!r.ok)throw new Error('source '+r.status);const j=await r.json();let raw=Array.isArray(j)?((j[0]&&j[0].text)||''):(j.text||j.content||'');const box=document.createElement('div');box.innerHTML=String(raw||'');const text=(box.textContent||box.innerText||'').replace(/\s+/g,' ').trim();if(!text)throw new Error('empty');SAFE_STORAGE.setItem(ck,text);return {text}}finally{clearTimeout(timer)}}
+function setTrans(id,text,ok=true){const el=$(id);if(el)el.innerHTML=`<div class="${ok?'':'small'}">${esc(text)}</div>`}async function loadTranslations(x){const token=++translationToken;const slots=[['preciseText',settings.precise],['looseText',settings.loose],['paraphraseText',settings.paraphrase]];slots.forEach(async([id,type])=>{try{const r=await publicVerse(type,x);if(token!==translationToken)return;setTrans(id,r.text,true)}catch(e){if(token!==translationToken)return;setTrans(id,`${type} could not load. Tap the current verse to retry.`,false)}})}
+const HENRY_BOOKS=Object.fromEntries(BOOKS.map(b=>[b.id,b.name.toLowerCase().replace(/ /g,'-')]));function parseHenryCommentary(md,verse){const body=String(md||'').replace(/^---[\s\S]*?---/,'');const re=/## Verses?\s+(\d+)(?:[–-](\d+))?\s*\n\n([\s\S]*?)(?=\n## |$)/g;let m;while((m=re.exec(body))){const a=Number(m[1]),b=Number(m[2]||m[1]);if(verse>=a&&verse<=b)return {text:m[3].replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[*_#>`]/g,'').replace(/\s+/g,' ').trim(),a,b}}return null}
+async function loadHenry(x){const el=$('commonCommentary'),title=$('commonCommentaryTitle');if(!el)return;el.textContent='Loading commentary…';const slug=HENRY_BOOKS[x.book];try{const ck=`vs45_henry_${x.book}_${x.chapter}`;let md=SAFE_STORAGE.getItem(ck);if(!md){const r=await fetch(`https://raw.githubusercontent.com/lyteword/mhenry-concise/main/${slug}/chapter-${x.chapter}.md`,{cache:'force-cache'});if(!r.ok)throw new Error();md=await r.text();SAFE_STORAGE.setItem(ck,md)}const result=parseHenryCommentary(md,x.verse);if(result){const range=result.a===result.b?`${refOf(x)}`:`${bookById(x.book).name} ${x.chapter}:${result.a}–${result.b}`;title.textContent=`Common Commentary · Matthew Henry Concise · ${range}`;el.textContent=result.text}else el.textContent='No separate comment was found for this verse.'}catch{el.textContent='Common commentary could not load.'}}
+const SDA_RANGES=[[1,1,5],[2,6,12],[3,13,22],[4,23,39],[5,40,43],[6,44,49],[7,50,66]],SDA_NAMES={9:'1-Samuel',10:'2-Samuel',11:'1-Kings',12:'2-Kings',13:'1-Chronicles',14:'2-Chronicles',22:'The Song of Solomon',25:'Lamentations of Jeremiah',50:'Phillippians'};function sdaFileInfo(id){const r=SDA_RANGES.find(([,a,b])=>id>=a&&id<=b),book=bookById(id);if(!r||!book||id===63||id===64)return null;return {volume:r[0],file:`SdaBc-${r[0]} (${String(id).padStart(2,'0')}) ${SDA_NAMES[id]||book.name}`}}function normalizeSdaText(t){return String(t||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim()}function extractSdaVerse(text,x){const t=normalizeSdaText(text);let start=0;for(const p of [new RegExp(`\\bCHAPTER\\s+${x.chapter}\\b`,'i'),new RegExp(`\\bChapter\\s+${x.chapter}\\b`,'i'),new RegExp(`\\n${x.chapter}\\s*\\n`)]){const m=t.match(p);if(m){start=m.index;break}}const rest=t.slice(start),nm=rest.match(new RegExp(`\\bCHAPTER\\s+${x.chapter+1}\\b`,'i')),chapterText=nm?rest.slice(0,nm.index):rest.slice(0,90000);let vm=null;for(const p of [new RegExp(`(?:^|\\n)\\s*${x.verse}\\.\\s+`,'m'),new RegExp(`(?:^|\\n)\\s*${x.verse}\\s*[-–—]\\s*`,'m'),new RegExp(`\\bVerse\\s+${x.verse}\\b`,'i'),new RegExp(`\\bVs?\\.\\s*${x.verse}\\b`,'i')]){vm=chapterText.match(p);if(vm)break}if(!vm)return '';const after=chapterText.slice(vm.index),next=after.slice(vm[0].length).match(/\n\s*\d{1,2}\.\s+/),block=next?after.slice(0,vm[0].length+next.index):after.slice(0,2200);return block.replace(/\n+/g,' ').replace(/\s+/g,' ').trim().slice(0,2200)}
+async function loadSda(x){const el=$('sdaCommentary'),title=$('sdaCommentaryTitle');if(!el)return;const info=sdaFileInfo(x.book);if(!info){el.textContent='SDA Bible Commentary source is not connected for this book yet.';return}const verseKey=`vs45_sda_${x.book}_${x.chapter}_${x.verse}`,saved=SAFE_STORAGE.getItem(verseKey);if(saved){title.textContent=`SDA Commentary · SDA Bible Commentary, vol. ${info.volume} · ${refOf(x)}`;el.textContent=saved;return}try{const base='https://archive.org/download/SdaBibleCommentary1980/';let tx='';for(const suffix of ['_djvu.txt','.txt']){const url=`${base}${encodeURIComponent(info.file+suffix)}`;try{const r=await fetch(url,{cache:'force-cache'});if(r.ok){tx=await r.text();break}}catch{}}if(!tx)throw new Error();const text=extractSdaVerse(tx,x);if(text){SAFE_STORAGE.setItem(verseKey,text);title.textContent=`SDA Commentary · SDA Bible Commentary, vol. ${info.volume} · ${refOf(x)}`;el.textContent=text}else el.textContent='No direct SDA Bible Commentary note was found for this verse.'}catch{el.textContent='SDA commentary source could not load.'}}
+const AI_WORKER='https://verse-study.jkharris27.workers.dev';async function loadAI(x){const el=$('aiCommentary');if(!el)return;const ck=`vs_ai_${x.book}_${x.chapter}_${x.verse}`,cached=SAFE_STORAGE.getItem(ck);if(cached){el.textContent=cached;return}el.textContent='Generating AI commentary…';try{await new Promise(r=>setTimeout(r,900));const [a,b,c]=await Promise.all([publicVerse(settings.precise,x),publicVerse(settings.loose,x),publicVerse(settings.paraphrase,x)]);const r=await fetch(AI_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference:refOf(x),esv:a.text,nlt:b.text,msg:c.text,commonCommentary:$('commonCommentary')?.textContent||'',sdaCommentary:$('sdaCommentary')?.textContent||''})});if(!r.ok)throw new Error();const data=await r.json(),text=String(data.commentary||'').trim();if(!text)throw new Error();SAFE_STORAGE.setItem(ck,text);el.textContent=text}catch{el.textContent='AI commentary could not load. Tap the current verse to try again.'}}
+const STEP_GREEK_BOOKS={40:'Matt',41:'Mark',42:'Luke',43:'John',44:'Acts',45:'Rom',46:'1Cor',47:'2Cor',48:'Gal',49:'Eph',50:'Phil',51:'Col',52:'1Thess',53:'2Thess',54:'1Tim',55:'2Tim',56:'Titus',57:'Phlm',58:'Heb',59:'Jas',60:'1Pet',61:'2Pet',62:'1John',63:'2John',64:'3John',65:'Jude',66:'Rev'};const OSHB_BOOKS={1:'Gen',2:'Exod',3:'Lev',4:'Num',5:'Deut',6:'Josh',7:'Judg',8:'Ruth',9:'1Sam',10:'2Sam',11:'1Kgs',12:'2Kgs',13:'1Chr',14:'2Chr',15:'Ezra',16:'Neh',17:'Esth',18:'Job',19:'Ps',20:'Prov',21:'Eccl',22:'Song',23:'Isa',24:'Jer',25:'Lam',26:'Ezek',27:'Dan',28:'Hos',29:'Joel',30:'Amos',31:'Obad',32:'Jonah',33:'Mic',34:'Nah',35:'Hab',36:'Zeph',37:'Hag',38:'Zech',39:'Mal'};
+async function loadWordStudy(x){const el=$('wordStudy'),title=$('wordStudyTitle');if(!el)return;const isNT=x.book>=40;title.textContent=isNT?'Word Study · Greek':'Word Study · Hebrew';el.textContent=`Loading ${isNT?'Greek':'Hebrew'} word study…`;try{if(isNT){const code=STEP_GREEK_BOOKS[x.book],r=await fetch(`https://raw.githubusercontent.com/metaxiamultimedia/scriptures-js-source-stepbible-tagnt-tr/main/data/stepbible-tagnt-tr/${code}/${x.chapter}/${x.verse}.json`,{cache:'force-cache'});if(!r.ok)throw new Error();const d=await r.json(),arr=(d.words||[]).filter(w=>w.strongs&&/^(N|V|A)-/.test(String(w.morph||'').replace(/^robinson:/,''))).slice(0,5);if(!arr.length){el.textContent='No key lexical entries found for this verse.';return}el.innerHTML=arr.map(w=>{const strong=String(Array.isArray(w.strongs)?w.strongs[0]:w.strongs||'').replace(/[A-Z]$/,''),meaning=w.metadata?.gloss||w.metadata?.subMeaning||w.translation||'—';return `<div class="wordrow"><div><span class="originalword">${esc(w.lemma||w.text||'')}</span><span class="wordmeta">${esc(strong)}</span></div><div class="wordmeaning"><b>Meaning:</b> ${esc(meaning)}</div><div class="wordgrammar">${esc(String(w.morph||'').replace(/^robinson:/,''))}</div></div>`}).join('')}else{const code=OSHB_BOOKS[x.book],xml=await (await fetch(`https://raw.githubusercontent.com/openscriptures/morphhb/master/wlc/${code}.xml`,{cache:'force-cache'})).text(),doc=new DOMParser().parseFromString(xml,'application/xml'),verse=Array.from(doc.getElementsByTagNameNS('*','verse')).find(v=>v.getAttribute('osisID')===`${code}.${x.chapter}.${x.verse}`);if(!verse)throw new Error();const words=Array.from(verse.getElementsByTagNameNS('*','w')).filter(w=>/H[NVA]/.test(w.getAttribute('morph')||'')).slice(0,5);el.innerHTML=words.map(w=>`<div class="wordrow"><div><span class="originalword" dir="rtl">${esc((w.textContent||'').replaceAll('/',''))}</span></div><div class="wordgrammar">${esc(w.getAttribute('morph')||'Hebrew word')}</div></div>`).join('')||'No key lexical entries found for this verse.'}}catch{el.innerHTML='<div class="small">Original-language word study could not load. The verse translations are unaffected.</div>'}}
+function updateBookmarkUI(){const bm=loadLocation('verseStudy.bookmark'),same=!!bm&&bm.book===current.book&&bm.chapter===current.chapter&&bm.verse===current.verse;$('bookmarkBtn').classList.toggle('active',same);$('bookmarkBtn').setAttribute('aria-pressed',same?'true':'false');$('bookmarkLabel').textContent=bm?`Bookmark: ${refOf(bm)}`:'No bookmark saved'}function commentaryCard(id,title,loading){return `<article class="card"><div class="eyebrow" id="${id}Title">${title}</div><div id="${id}" class="commentary-body">${loading}</div></article>`}
+function render(){const ref=refOf();$('cur').textContent=ref;$('pickerLabel').textContent=ref;$('headerRef').textContent=`${ref} · ${settings.precise} / ${settings.loose} / ${settings.paraphrase}`;let html=`<article class="card"><div class="eyebrow">Precise · ${esc(settings.precise)}</div><div id="preciseText" class="note">Loading ${esc(settings.precise)}…</div></article><article class="card"><div class="eyebrow">Loose · ${esc(settings.loose)}</div><div id="looseText" class="note">Loading ${esc(settings.loose)}…</div></article><article class="card"><div class="eyebrow">Paraphrase · ${esc(settings.paraphrase)}</div><div id="paraphraseText" class="note">Loading ${esc(settings.paraphrase)}…</div></article><article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>`;if(settings.showHenry)html+=commentaryCard('commonCommentary','Common Commentary · Matthew Henry Concise','Loading commentary…');if(settings.showSda)html+=commentaryCard('sdaCommentary','SDA Commentary · SDA Bible Commentary','Loading SDA commentary…');if(settings.showAi)html+=commentaryCard('aiCommentary','AI Commentary','Generating AI commentary…');$('study').innerHTML=html;SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));updateBookmarkUI();loadTranslations({...current});loadWordStudy({...current});if(settings.showHenry)loadHenry({...current});if(settings.showSda)loadSda({...current});if(settings.showAi)loadAI({...current})}
 function goTo(x){if(!validLocation(x))return;current={book:Number(x.book),chapter:Number(x.chapter),verse:Number(x.verse)};closePicker();render()}
-
-const BOOK_GROUPS={
- OT:[
-   {title:'Law',ids:[1,2,3,4,5]},
-   {title:'History & Wisdom',ids:[6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]},
-   {title:'Prophets',ids:[23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39]}
- ],
- NT:[
-   {title:'Gospels & Acts',ids:[40,41,42,43,44]},
-   {title:"Paul's Letters",ids:[45,46,47,48,49,50,51,52,53,54,55,56,57]},
-   {title:'General & Revelation',ids:[58,59,60,61,62,63,64,65,66]}
- ]
-};
-function setTestament(t){
- pickerTestament=t;
- $('otTab').classList.toggle('active',t==='OT');
- $('ntTab').classList.toggle('active',t==='NT');
- $('chapterPanel').style.display='none';
- renderBookColumns();
-}
-function renderBookColumns(){
- const box=$('bookColumns');box.innerHTML='';
- BOOK_GROUPS[pickerTestament].forEach(group=>{
-   const col=document.createElement('section');col.className='booksection';
-   const h=document.createElement('div');h.className='sectiontitle';h.textContent=group.title;col.appendChild(h);
-   group.ids.forEach(id=>{
-     const b=bookById(id),btn=document.createElement('button');
-     btn.className='bookbtn';
-     if(id===current.book)btn.classList.add('current');
-     if(id===pickerBook)btn.classList.add('selected');
-     btn.textContent=b.name;
-     btn.onclick=()=>selectBookForChapters(id);
-     col.appendChild(btn);
-   });
-   box.appendChild(col);
- });
-}
-function selectBookForChapters(bookId){
- pickerBook=bookId;
- renderBookColumns();
- const b=bookById(bookId);
- $('chapterHeading').textContent=b.name;
- const grid=$('chapterGrid');grid.innerHTML='';
- for(let ch=1;ch<=b.chapters;ch++){
-   const btn=document.createElement('button');btn.className='numbtn';btn.textContent=ch;
-   if(bookId===current.book&&ch===current.chapter)btn.classList.add('current');
-   btn.onclick=()=>openVerseScreen(bookId,ch);
-   grid.appendChild(btn);
- }
- $('chapterPanel').style.display='block';
- setTimeout(()=>$('chapterPanel').scrollIntoView({behavior:'smooth',block:'nearest'}),0);
-}
-function renderBooks(){
- pickerBook=current.book;
- pickerTestament=current.book<=39?'OT':'NT';
- $('otTab').classList.toggle('active',pickerTestament==='OT');
- $('ntTab').classList.toggle('active',pickerTestament==='NT');
- renderBookColumns();
- selectBookForChapters(current.book);
-}
-async function verseCount(book,chapter){
- let n=Number(SAFE_STORAGE.getItem(countKey(book,chapter)));if(n>0)return n;
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),5000);
- try{
-  const r=await fetch(`https://bolls.life/get-chapter/ESV/${book}/${chapter}/`,{signal:ctrl.signal,cache:'no-store'});
-  if(!r.ok)throw new Error('chapter');
-  const j=await r.json();n=Array.isArray(j)?j.length:0;if(n>0)SAFE_STORAGE.setItem(countKey(book,chapter),String(n));return n;
- }finally{clearTimeout(timer)}
-}
-async function openVerseScreen(book,chapter){
- pickerBook=book;pickerChapter=chapter;$('booksScreen').style.display='none';$('verseScreen').style.display='block';
- $('verseHeading').textContent=`${bookById(book).name} ${chapter}`;$('verseGrid').innerHTML='';$('pickerLoading').textContent='Loading verses…';
- try{
-  const n=await verseCount(book,chapter);$('pickerLoading').textContent='';
-  for(let v=1;v<=n;v++){const btn=document.createElement('button');btn.className='numbtn';btn.textContent=v;
-    if(book===current.book&&chapter===current.chapter&&v===current.verse)btn.classList.add('current');
-    btn.onclick=()=>goTo({book,chapter,verse:v});$('verseGrid').appendChild(btn)}
- }catch(e){$('pickerLoading').textContent='Could not load verse list. Tap back and try again.'}
-}
-function openPicker(){$('pickerOverlay').classList.add('show');$('pickerOverlay').setAttribute('aria-hidden','false');$('booksScreen').style.display='block';$('verseScreen').style.display='none';renderBooks();document.body.style.overflow='hidden'}
-function closePicker(){$('pickerOverlay').classList.remove('show');$('pickerOverlay').setAttribute('aria-hidden','true');document.body.style.overflow=''}
-
-$('openPicker').onclick=openPicker;$('closePicker').onclick=closePicker;$('backToBooks').onclick=()=>{$('verseScreen').style.display='none';$('booksScreen').style.display='block'};$('otTab').onclick=()=>setTestament('OT');$('ntTab').onclick=()=>setTestament('NT');
-$('bookmarkBtn').onclick=()=>{
- const bm=loadLocation('verseStudy.bookmark');
- const same=!!bm && bm.book===current.book&&bm.chapter===current.chapter&&bm.verse===current.verse;
- if(same){
-   try{localStorage.removeItem('verseStudy.bookmark')}catch(e){}
- }else{
-   SAFE_STORAGE.setItem('verseStudy.bookmark',JSON.stringify(current));
- }
- updateBookmarkUI();
-};
-$('cur').onclick=()=>loadPreferredTranslations({...current});
-
-async function previous(){
- if(current.verse>1)return goTo({...current,verse:current.verse-1});
- if(current.chapter>1){const ch=current.chapter-1;let n=await verseCount(current.book,ch).catch(()=>1);return goTo({book:current.book,chapter:ch,verse:n||1})}
- if(current.book>1){const b=bookById(current.book-1),ch=b.chapters;let n=await verseCount(b.id,ch).catch(()=>1);return goTo({book:b.id,chapter:ch,verse:n||1})}
-}
-async function next(){
- let n=await verseCount(current.book,current.chapter).catch(()=>current.verse+1);
- if(current.verse<n)return goTo({...current,verse:current.verse+1});
- const b=bookById(current.book);
- if(current.chapter<b.chapters)return goTo({book:current.book,chapter:current.chapter+1,verse:1});
- if(current.book<66)return goTo({book:current.book+1,chapter:1,verse:1});
-}
-$('prev').onclick=previous;$('next').onclick=next;
-
-function openShare(){
- $('shareOverlay').classList.add('show');$('shareOverlay').setAttribute('aria-hidden','false');
- $('shareStatus').textContent='';document.body.style.overflow='hidden';
-}
-function closeShare(){
- $('shareOverlay').classList.remove('show');$('shareOverlay').setAttribute('aria-hidden','true');
- document.body.style.overflow='';
-}
-async function copyShareLink(){
- try{
-  await navigator.clipboard.writeText(SHARE_URL);
-  $('shareStatus').textContent='Link copied';
- }catch(e){
-  const t=document.createElement('textarea');t.value=SHARE_URL;document.body.appendChild(t);t.select();
-  document.execCommand('copy');t.remove();$('shareStatus').textContent='Link copied';
- }
-}
-$('openShare').onclick=openShare;$('closeShare').onclick=closeShare;
-$('shareOverlay').onclick=e=>{if(e.target===$('shareOverlay'))closeShare()};
-$('copyShare').onclick=copyShareLink;
-$('nativeShare').onclick=async()=>{
- if(navigator.share){
-  try{await navigator.share({title:'Verse Study',text:'Open Verse Study',url:SHARE_URL})}catch(e){}
- }else await copyShareLink();
-};
-
-render();
-if('serviceWorker' in navigator && location.protocol==='https:'){
- window.addEventListener('load',async()=>{
-  try{
-   const registration=await navigator.serviceWorker.register('./sw.js');
-   await registration.update();
-  }catch(e){}
- });
-}
-</script></body></html>
+const BOOK_GROUPS={OT:[{title:'Law',ids:[1,2,3,4,5]},{title:'History & Wisdom',ids:[6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]},{title:'Prophets',ids:[23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39]}],NT:[{title:'Gospels & Acts',ids:[40,41,42,43,44]},{title:"Paul's Letters",ids:[45,46,47,48,49,50,51,52,53,54,55,56,57]},{title:'General & Revelation',ids:[58,59,60,61,62,63,64,65,66]}]};function setTestament(t){pickerTestament=t;$('otTab').classList.toggle('active',t==='OT');$('ntTab').classList.toggle('active',t==='NT');$('chapterPanel').style.display='none';renderBookColumns()}function renderBookColumns(){const box=$('bookColumns');box.innerHTML='';BOOK_GROUPS[pickerTestament].forEach(group=>{const col=document.createElement('section');col.className='booksection';const h=document.createElement('div');h.className='sectiontitle';h.textContent=group.title;col.appendChild(h);group.ids.forEach(id=>{const b=bookById(id),btn=document.createElement('button');btn.className='bookbtn';if(id===current.book)btn.classList.add('current');if(id===pickerBook)btn.classList.add('selected');btn.textContent=b.name;btn.onclick=()=>selectBookForChapters(id);col.appendChild(btn)});box.appendChild(col)})}function selectBookForChapters(id){pickerBook=id;renderBookColumns();const b=bookById(id);$('chapterHeading').textContent=b.name;const grid=$('chapterGrid');grid.innerHTML='';for(let ch=1;ch<=b.chapters;ch++){const btn=document.createElement('button');btn.className='numbtn';btn.textContent=ch;if(id===current.book&&ch===current.chapter)btn.classList.add('current');btn.onclick=()=>openVerseScreen(id,ch);grid.appendChild(btn)}$('chapterPanel').style.display='block'}function renderBooks(){pickerBook=current.book;pickerTestament=current.book<=39?'OT':'NT';$('otTab').classList.toggle('active',pickerTestament==='OT');$('ntTab').classList.toggle('active',pickerTestament==='NT');renderBookColumns();selectBookForChapters(current.book)}async function verseCount(book,chapter){let n=Number(SAFE_STORAGE.getItem(countKey(book,chapter)));if(n>0)return n;const r=await fetch(`https://bolls.life/get-chapter/${settings.precise}/${book}/${chapter}/`,{cache:'no-store'});if(!r.ok)throw new Error();const j=await r.json();n=Array.isArray(j)?j.length:0;if(n>0)SAFE_STORAGE.setItem(countKey(book,chapter),String(n));return n}async function openVerseScreen(book,chapter){pickerBook=book;pickerChapter=chapter;$('booksScreen').style.display='none';$('verseScreen').style.display='block';$('verseHeading').textContent=`${bookById(book).name} ${chapter}`;$('verseGrid').innerHTML='';$('pickerLoading').textContent='Loading verses…';try{const n=await verseCount(book,chapter);$('pickerLoading').textContent='';for(let v=1;v<=n;v++){const btn=document.createElement('button');btn.className='numbtn';btn.textContent=v;if(book===current.book&&chapter===current.chapter&&v===current.verse)btn.classList.add('current');btn.onclick=()=>goTo({book,chapter,verse:v});$('verseGrid').appendChild(btn)}}catch{$('pickerLoading').textContent='Could not load verse list. Tap back and try again.'}}function openPicker(){$('pickerOverlay').classList.add('show');$('pickerOverlay').setAttribute('aria-hidden','false');$('booksScreen').style.display='block';$('verseScreen').style.display='none';renderBooks();document.body.style.overflow='hidden'}function closePicker(){$('pickerOverlay').classList.remove('show');$('pickerOverlay').setAttribute('aria-hidden','true');document.body.style.overflow=''}
+$('openPicker').onclick=openPicker;$('closePicker').onclick=closePicker;$('backToBooks').onclick=()=>{$('verseScreen').style.display='none';$('booksScreen').style.display='block'};$('otTab').onclick=()=>setTestament('OT');$('ntTab').onclick=()=>setTestament('NT');$('bookmarkBtn').onclick=()=>{const bm=loadLocation('verseStudy.bookmark'),same=!!bm&&bm.book===current.book&&bm.chapter===current.chapter&&bm.verse===current.verse;if(same)SAFE_STORAGE.removeItem('verseStudy.bookmark');else SAFE_STORAGE.setItem('verseStudy.bookmark',JSON.stringify(current));updateBookmarkUI()};$('cur').onclick=()=>render();async function previous(){if(current.verse>1)return goTo({...current,verse:current.verse-1});if(current.chapter>1){const ch=current.chapter-1,n=await verseCount(current.book,ch).catch(()=>1);return goTo({book:current.book,chapter:ch,verse:n||1})}if(current.book>1){const b=bookById(current.book-1),ch=b.chapters,n=await verseCount(b.id,ch).catch(()=>1);return goTo({book:b.id,chapter:ch,verse:n||1})}}async function next(){const n=await verseCount(current.book,current.chapter).catch(()=>current.verse+1);if(current.verse<n)return goTo({...current,verse:current.verse+1});const b=bookById(current.book);if(current.chapter<b.chapters)return goTo({book:current.book,chapter:current.chapter+1,verse:1});if(current.book<66)return goTo({book:current.book+1,chapter:1,verse:1})}$('prev').onclick=previous;$('next').onclick=next;
+function openSettings(){syncSettingsUI();$('settingsOverlay').classList.add('show');$('settingsOverlay').setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}function closeSettings(){$('settingsOverlay').classList.remove('show');$('settingsOverlay').setAttribute('aria-hidden','true');document.body.style.overflow=''}$('openSettings').onclick=openSettings;$('closeSettings').onclick=closeSettings;function openShare(){$('shareOverlay').classList.add('show');$('shareOverlay').setAttribute('aria-hidden','false');$('shareStatus').textContent='';document.body.style.overflow='hidden'}function closeShare(){$('shareOverlay').classList.remove('show');$('shareOverlay').setAttribute('aria-hidden','true');document.body.style.overflow=''}async function copyShareLink(){try{await navigator.clipboard.writeText(SHARE_URL);$('shareStatus').textContent='Link copied'}catch{const t=document.createElement('textarea');t.value=SHARE_URL;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();$('shareStatus').textContent='Link copied'}}$('openShare').onclick=openShare;$('closeShare').onclick=closeShare;$('shareOverlay').onclick=e=>{if(e.target===$('shareOverlay'))closeShare()};$('copyShare').onclick=copyShareLink;$('nativeShare').onclick=async()=>{if(navigator.share){try{await navigator.share({title:'Verse Study',text:'Open Verse Study',url:SHARE_URL})}catch{}}else await copyShareLink()};syncSettingsUI();render();if('serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',async()=>{try{const registration=await navigator.serviceWorker.register('./sw.js');await registration.update()}catch{}});
+</script>
+</body></html>
