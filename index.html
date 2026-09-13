@@ -585,7 +585,8 @@ function render(){
  <article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>
  <article class="card"><div class="eyebrow" id="commonCommentaryTitle">Common Commentary · Matthew Henry Concise</div><div id="commonCommentary" class="wordloading">Loading commentary…</div></article>
  <article class="card"><div class="eyebrow" id="sdaCommentaryTitle">SDA Commentary · SDA Bible Commentary</div><div id="sdaCommentary" class="wordloading">Loading SDA commentary…</div></article>`;
- SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));
+ $('study').insertAdjacentHTML('beforeend','<article class="card"><div class="eyebrow">AI Commentary</div><div id="aiCommentary" class="wordloading">Generating AI commentary…</div></article>');
+  SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));loadAICommentary({...current});
  updateBookmarkUI();loadPreferredTranslations({...current});loadWordStudy({...current});loadCommonCommentary({...current});loadSdaCommentary({...current});
 }
 function goTo(x){if(!validLocation(x))return;current={book:Number(x.book),chapter:Number(x.chapter),verse:Number(x.verse)};closePicker();render()}
