@@ -1,11 +1,17 @@
-const CACHE='verse-study-v50';
+const CACHE='verse-study-v51';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 function injectEnhancements(html){
  if(html.includes('v47.js'))return html;
- return html.replace('</body>','<script src="./v47.js?v=50"></script></body>');
+ return html.replace('</body>','<script src="./v47.js?v=51"></script></body>');
 }
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ const keys=await caches.keys();
+ await Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)));
+ await self.clients.claim();
+ const clients=await self.clients.matchAll({type:'window'});
+ await Promise.all(clients.map(client=>client.navigate(client.url).catch(()=>null)));
+})()));
 self.addEventListener('fetch',event=>{
  if(event.request.method!=='GET')return;
  const url=new URL(event.request.url);
