@@ -1,131 +1,32 @@
 (()=>{
 const TCW_CODE='TCW';
 const TCW_EXPECTED=31102;
+const HANDLE_DB='verseStudy.localFiles';
+const HANDLE_STORE='handles';
+const HANDLE_KEY='clearWordEpub';
 let tcwVerses=null;
 let tcwReady=false;
+let tcwHandle=null;
+let tcwFileName='';
 const $=id=>document.getElementById(id);
 const PREFIXES=['gen','ex','lev','num','deut','josh','judg','ruth','sam1','sam2','kin1','kin2','chr1','chr2','ezra','neh','esth','job','ps','prov','eccl','song','is','jer','lam','ezek','dan','hos','joel','amos','obad','jon','mic','nah','hab','zeph','hag','zec','mal','matt','mark','luke','john','acts','rom','cor1','cor2','gal','eph','phil','col','thess1','thess2','tim1','tim2','titus','phile','heb','james','pet1','pet2','john1','john2','john3','jude','rev'];
 const BOOK_NUM=Object.fromEntries(PREFIXES.map((p,i)=>[p,i+1]));
-function ensureOption(){
- if(typeof VERSION_OPTIONS==='undefined')return;
- const list=VERSION_OPTIONS.paraphrase;
- const i=list.findIndex(v=>v.code===TCW_CODE);
- if(tcwReady&&i<0)list.push({code:TCW_CODE,name:'The Clear Word (your EPUB)'});
- if(!tcwReady&&i>=0)list.splice(i,1);
-}
-function loadJSZip(){
- if(window.JSZip)return Promise.resolve(window.JSZip);
- return new Promise((resolve,reject)=>{
-  const s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  s.onload=()=>resolve(window.JSZip);
-  s.onerror=()=>reject(new Error('Could not load the EPUB reader. Check your internet connection and try again.'));
-  document.head.appendChild(s);
- });
-}
-function cleanVerseText(text){
- return String(text||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').replace(/^\s*\d+[a-z]?\s*/i,'').trim();
-}
-function extractFromHtml(html,verses){
- if(!/(?:id|name)=["'][a-z0-9]+\.\d+\.\d+["']/i.test(html))return 0;
- const doc=new DOMParser().parseFromString(html,'text/html');
- const anchors=[...doc.querySelectorAll('a[id],a[name]')].filter(a=>/^([a-z0-9]+)\.(\d+)\.(\d+)$/i.test(a.id||a.getAttribute('name')||''));
- let added=0;
- for(let i=0;i<anchors.length;i++){
-  const a=anchors[i];
-  const id=a.id||a.getAttribute('name')||'';
-  const m=id.match(/^([a-z0-9]+)\.(\d+)\.(\d+)$/i);
-  if(!m)continue;
-  const book=BOOK_NUM[m[1].toLowerCase()];
-  if(!book)continue;
-  const range=doc.createRange();
-  range.setStartAfter(a);
-  if(i+1<anchors.length)range.setEndBefore(anchors[i+1]);
-  else {
-   const container=a.closest('p,div,li,blockquote')||doc.body;
-   try{range.setEnd(container,container.childNodes.length)}catch{range.setEndAfter(a)}
-  }
-  const text=cleanVerseText(range.toString());
-  if(!text)continue;
-  const key=`${book}.${Number(m[2])}.${Number(m[3])}`;
-  verses[key]=text;
-  added++;
- }
- return added;
-}
-async function openEpub(file){
- if(!file||!file.name?.toLowerCase().endsWith('.epub'))throw new Error('Choose your Clear Word .epub file.');
- const JSZip=await loadJSZip();
- const zip=await JSZip.loadAsync(await file.arrayBuffer());
- const htmlFiles=Object.values(zip.files).filter(f=>!f.dir&&/\.(?:xhtml|html|htm)$/i.test(f.name));
- const verses={};
- for(let i=0;i<htmlFiles.length;i++){
-  const html=await htmlFiles[i].async('string');
-  extractFromHtml(html,verses);
- }
- const count=Object.keys(verses).length;
- if(count!==TCW_EXPECTED)throw new Error(`This EPUB did not read as the expected Clear Word Bible (${count.toLocaleString()} of ${TCW_EXPECTED.toLocaleString()} verses found).`);
- tcwVerses=verses;
- tcwReady=true;
- ensureOption();
- try{syncSettingsUI()}catch{}
- if(typeof settings!=='undefined'){
-  settings.paraphrase=TCW_CODE;
-  try{saveSettings()}catch{}
- }
- updateUI(file.name,count);
- try{syncSettingsUI()}catch{}
- try{render()}catch{}
- alert('The Clear Word is ready for this session. Verse Study did not save a copy of the book.');
-}
-function addUI(){
- const settingsBody=document.querySelector('.settingsbody');
- if(!settingsBody||$('tcwPrivateSection'))return;
- const section=document.createElement('section');
- section.id='tcwPrivateSection';
- section.className='settings-section';
- section.innerHTML=`<h2>The Clear Word</h2><div class="settingsnote">Use your own local Clear Word EPUB. Verse Study reads it only for the current session and does not upload or save the book.</div><div id="tcwPrivateStatus" class="settingsnote" style="margin-top:10px">No EPUB open.</div><input id="tcwEpubInput" type="file" accept=".epub,application/epub+zip" style="display:none"><button id="tcwOpenBtn" class="resetbtn" type="button">Open my Clear Word EPUB</button><button id="tcwCloseBtn" class="resetbtn" type="button" style="display:none;margin-top:8px">Close Clear Word</button>`;
- const about=[...settingsBody.querySelectorAll('.settings-section')].find(s=>s.querySelector('h2')?.textContent.trim()==='About Verse Study');
- if(about)settingsBody.insertBefore(section,about);else settingsBody.appendChild(section);
- $('tcwOpenBtn').onclick=()=>$('tcwEpubInput').click();
- $('tcwEpubInput').onchange=async e=>{
-  const f=e.target.files?.[0];if(!f)return;
-  const b=$('tcwOpenBtn');b.disabled=true;b.textContent='Opening EPUB…';
-  try{await openEpub(f)}catch(err){alert(`Could not open The Clear Word: ${err.message||err}`)}finally{b.disabled=false;b.textContent=tcwReady?'Open a different Clear Word EPUB':'Open my Clear Word EPUB';e.target.value=''}
- };
- $('tcwCloseBtn').onclick=()=>{
-  tcwVerses=null;tcwReady=false;
-  if(typeof settings!=='undefined'&&settings.paraphrase===TCW_CODE){settings.paraphrase='MSG';try{saveSettings()}catch{}}
-  ensureOption();
-  try{syncSettingsUI()}catch{}
-  updateUI();
-  try{render()}catch{}
- };
- updateUI();
-}
-function updateUI(name,count){
- const s=$('tcwPrivateStatus'),b=$('tcwOpenBtn'),c=$('tcwCloseBtn');if(!s)return;
- if(tcwReady){s.textContent=`Open for this session${name?`: ${name}`:''}${count?` (${count.toLocaleString()} verses)`:''}. Nothing from the book was saved by Verse Study.`;if(b)b.textContent='Open a different Clear Word EPUB';if(c)c.style.display='block'}
- else{s.textContent='No EPUB open. TCW will not appear as a paraphrase choice until you open your file.';if(b)b.textContent='Open my Clear Word EPUB';if(c)c.style.display='none'}
-}
-if(typeof publicVerse==='function'){
- const basePublicVerse=publicVerse;
- publicVerse=async function(type,x){
-  if(type!==TCW_CODE)return basePublicVerse(type,x);
-  if(!tcwReady||!tcwVerses)throw new Error('Open your Clear Word EPUB in Settings first.');
-  const text=tcwVerses[`${x.book}.${x.chapter}.${x.verse}`];
-  if(!text)throw new Error('Clear Word verse not found in the open EPUB.');
-  return {text};
- };
-}
-function setVersion(){for(const el of document.querySelectorAll('div')){if(el.children.length===0&&/V4\.1[12]/.test(el.textContent||''))el.textContent=el.textContent.replace(/V4\.1[12]/,'V4.13')}}
-function resetStaleTcwSetting(){
- try{
-  if(typeof settings!=='undefined'&&settings.paraphrase===TCW_CODE){settings.paraphrase='MSG';saveSettings()}
- }catch{}
-}
-resetStaleTcwSetting();
-ensureOption();
-addUI();
-setVersion();
+function openHandleDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open(HANDLE_DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(HANDLE_STORE))r.result.createObjectStore(HANDLE_STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function handleGet(){try{const db=await openHandleDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(HANDLE_STORE,'readonly'),r=tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}catch{return null}}
+async function handleSet(handle){try{const db=await openHandleDb();await new Promise((resolve,reject)=>{const tx=db.transaction(HANDLE_STORE,'readwrite');tx.objectStore(HANDLE_STORE).put(handle,HANDLE_KEY);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}catch{}}
+async function handleDelete(){try{const db=await openHandleDb();await new Promise((resolve,reject)=>{const tx=db.transaction(HANDLE_STORE,'readwrite');tx.objectStore(HANDLE_STORE).delete(HANDLE_KEY);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}catch{}}
+function ensureOption(){if(typeof VERSION_OPTIONS==='undefined')return;const list=VERSION_OPTIONS.paraphrase;const i=list.findIndex(v=>v.code===TCW_CODE);const available=tcwReady||!!tcwHandle;if(available&&i<0)list.push({code:TCW_CODE,name:'The Clear Word (local EPUB)'});if(!available&&i>=0)list.splice(i,1)}
+function loadJSZip(){if(window.JSZip)return Promise.resolve(window.JSZip);return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';s.onload=()=>resolve(window.JSZip);s.onerror=()=>reject(new Error('Could not load the EPUB reader. Check your internet connection and try again.'));document.head.appendChild(s)})}
+function cleanVerseText(text){return String(text||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').replace(/^\s*\d+[a-z]?\s*/i,'').trim()}
+function extractFromHtml(html,verses){if(!/(?:id|name)=["'][a-z0-9]+\.\d+\.\d+["']/i.test(html))return 0;const doc=new DOMParser().parseFromString(html,'text/html');const anchors=[...doc.querySelectorAll('a[id],a[name]')].filter(a=>/^([a-z0-9]+)\.(\d+)\.(\d+)$/i.test(a.id||a.getAttribute('name')||''));let added=0;for(let i=0;i<anchors.length;i++){const a=anchors[i],id=a.id||a.getAttribute('name')||'',m=id.match(/^([a-z0-9]+)\.(\d+)\.(\d+)$/i);if(!m)continue;const book=BOOK_NUM[m[1].toLowerCase()];if(!book)continue;const range=doc.createRange();range.setStartAfter(a);if(i+1<anchors.length)range.setEndBefore(anchors[i+1]);else{const container=a.closest('p,div,li,blockquote')||doc.body;try{range.setEnd(container,container.childNodes.length)}catch{range.setEndAfter(a)}}const text=cleanVerseText(range.toString());if(!text)continue;verses[`${book}.${Number(m[2])}.${Number(m[3])}`]=text;added++}return added}
+async function indexEpub(file,{announce=true}={}){if(!file||!file.name?.toLowerCase().endsWith('.epub'))throw new Error('Choose your Clear Word .epub file.');const JSZip=await loadJSZip();const zip=await JSZip.loadAsync(await file.arrayBuffer());const htmlFiles=Object.values(zip.files).filter(f=>!f.dir&&/\.(?:xhtml|html|htm)$/i.test(f.name));const verses={};for(const f of htmlFiles){extractFromHtml(await f.async('string'),verses)}const count=Object.keys(verses).length;if(count!==TCW_EXPECTED)throw new Error(`This EPUB did not read as the expected Clear Word Bible (${count.toLocaleString()} of ${TCW_EXPECTED.toLocaleString()} verses found).`);tcwVerses=verses;tcwReady=true;tcwFileName=file.name;ensureOption();try{syncSettingsUI()}catch{};if(typeof settings!=='undefined'){settings.paraphrase=TCW_CODE;try{saveSettings()}catch{}}updateUI(file.name,count);try{syncSettingsUI()}catch{};try{render()}catch{};if(announce)alert('The Clear Word is connected. Verse Study remembers the local file connection, not a copy of the book.');return count}
+async function connectWithHandle(handle,{announce=true,request=false}={}){if(!handle)return false;let perm='granted';if(handle.queryPermission){perm=await handle.queryPermission({mode:'read'});if(perm!=='granted'&&request&&handle.requestPermission)perm=await handle.requestPermission({mode:'read'})}if(perm!=='granted')return false;const file=await handle.getFile();tcwHandle=handle;await handleSet(handle);await indexEpub(file,{announce});return true}
+async function chooseEpub(){if(window.showOpenFilePicker){const [handle]=await window.showOpenFilePicker({multiple:false,types:[{description:'EPUB book',accept:{'application/epub+zip':['.epub'],'application/zip':['.epub']}}]});if(handle){tcwHandle=handle;await handleSet(handle);await connectWithHandle(handle,{announce:true,request:true});return}}$('tcwEpubInput').click()}
+async function reconnect(){if(!tcwHandle)return chooseEpub();const ok=await connectWithHandle(tcwHandle,{announce:true,request:true});if(!ok)throw new Error('Verse Study needs permission to read the Clear Word EPUB again.')}
+function addUI(){const settingsBody=document.querySelector('.settingsbody');if(!settingsBody||$('tcwPrivateSection'))return;const section=document.createElement('section');section.id='tcwPrivateSection';section.className='settings-section';section.innerHTML=`<h2>The Clear Word</h2><div class="settingsnote">Your EPUB stays in its normal folder on this device. Verse Study remembers only the local file connection when your browser supports it, so it can reconnect without storing another copy of the book.</div><div id="tcwPrivateStatus" class="settingsnote" style="margin-top:10px">Checking for your EPUB…</div><input id="tcwEpubInput" type="file" accept=".epub,application/epub+zip" style="display:none"><button id="tcwOpenBtn" class="resetbtn" type="button">Connect my Clear Word EPUB</button><button id="tcwForgetBtn" class="resetbtn" type="button" style="display:none;margin-top:8px">Forget Clear Word file connection</button>`;const about=[...settingsBody.querySelectorAll('.settings-section')].find(s=>s.querySelector('h2')?.textContent.trim()==='About Verse Study');if(about)settingsBody.insertBefore(section,about);else settingsBody.appendChild(section);$('tcwOpenBtn').onclick=async()=>{const b=$('tcwOpenBtn');b.disabled=true;b.textContent=tcwHandle?'Reconnecting…':'Opening EPUB…';try{if(tcwHandle)await reconnect();else await chooseEpub()}catch(err){if(err?.name!=='AbortError')alert(`Could not connect The Clear Word: ${err.message||err}`)}finally{b.disabled=false;updateUI(tcwFileName,tcwVerses?Object.keys(tcwVerses).length:0)}};$('tcwEpubInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;const b=$('tcwOpenBtn');b.disabled=true;b.textContent='Opening EPUB…';try{tcwHandle=null;await handleDelete();await indexEpub(f,{announce:true})}catch(err){alert(`Could not open The Clear Word: ${err.message||err}`)}finally{b.disabled=false;e.target.value='';updateUI(tcwFileName,tcwVerses?Object.keys(tcwVerses).length:0)}};$('tcwForgetBtn').onclick=async()=>{tcwVerses=null;tcwReady=false;tcwHandle=null;tcwFileName='';await handleDelete();if(typeof settings!=='undefined'&&settings.paraphrase===TCW_CODE){settings.paraphrase='MSG';try{saveSettings()}catch{}}ensureOption();try{syncSettingsUI()}catch{};updateUI();try{render()}catch{}};updateUI()}
+function updateUI(name,count){const s=$('tcwPrivateStatus'),b=$('tcwOpenBtn'),f=$('tcwForgetBtn');if(!s)return;if(tcwReady){s.textContent=`Connected to ${name||'your local EPUB'}${count?` (${count.toLocaleString()} verses)`:''}. The EPUB itself remains in its original folder.`;if(b)b.textContent='Reconnect / choose a different EPUB';if(f)f.style.display='block'}else if(tcwHandle){s.textContent='Your Clear Word EPUB connection is remembered. Tap reconnect if the browser asks for file permission.';if(b)b.textContent='Reconnect Clear Word EPUB';if(f)f.style.display='block'}else{s.textContent=window.showOpenFilePicker?'No Clear Word EPUB connected yet.':'No EPUB connected. This browser cannot remember a file connection, so you may need to choose the EPUB again after reopening Verse Study.';if(b)b.textContent='Connect my Clear Word EPUB';if(f)f.style.display='none'}}
+if(typeof publicVerse==='function'){const basePublicVerse=publicVerse;publicVerse=async function(type,x){if(type!==TCW_CODE)return basePublicVerse(type,x);if(!tcwReady||!tcwVerses){if(tcwHandle){const ok=await connectWithHandle(tcwHandle,{announce:false,request:false});if(!ok)throw new Error('Reconnect your Clear Word EPUB in Settings.')}else throw new Error('Connect your Clear Word EPUB in Settings first.')}const text=tcwVerses[`${x.book}.${x.chapter}.${x.verse}`];if(!text)throw new Error('Clear Word verse not found in the connected EPUB.');return {text}}}
+function setVersion(){for(const el of document.querySelectorAll('div')){if(el.children.length===0&&/V4\.1[123]/.test(el.textContent||''))el.textContent=el.textContent.replace(/V4\.1[123]/,'V4.14')}}
+async function init(){tcwHandle=await handleGet();ensureOption();addUI();setVersion();if(tcwHandle){updateUI();try{const ok=await connectWithHandle(tcwHandle,{announce:false,request:false});if(!ok)updateUI()}catch{updateUI()}}else{try{if(typeof settings!=='undefined'&&settings.paraphrase===TCW_CODE){settings.paraphrase='MSG';saveSettings()}}catch{}updateUI()}}
+init();
 })();
