@@ -1,8 +1,8 @@
-const CACHE='verse-study-v54';
+const CACHE='verse-study-v55';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 function injectEnhancements(html){
- if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=54"></script></body>');
- if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=54"></script></body>');
+ if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=55"></script></body>');
+ if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=55"></script></body>');
  return html;
 }
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
