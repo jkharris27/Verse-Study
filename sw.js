@@ -1,8 +1,9 @@
-const CACHE='verse-study-v53';
+const CACHE='verse-study-v54';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 function injectEnhancements(html){
- if(html.includes('v47.js'))return html;
- return html.replace('</body>','<script src="./v47.js?v=53"></script></body>');
+ if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=54"></script></body>');
+ if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=54"></script></body>');
+ return html;
 }
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
@@ -29,7 +30,7 @@ self.addEventListener('fetch',event=>{
   }));
   return;
  }
- if(url.pathname.endsWith('/v47.js')||url.pathname.endsWith('/manifest.webmanifest')){
+ if(url.pathname.endsWith('/v47.js')||url.pathname.endsWith('/v411.js')||url.pathname.endsWith('/manifest.webmanifest')){
   event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
    const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response;
   }).catch(()=>caches.match(event.request)));
