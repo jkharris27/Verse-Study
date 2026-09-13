@@ -3,6 +3,10 @@
 // Source: https://github.com/STEPBible/STEPBible-Data/tree/master/Tagged-Bibles
 
 (() => {
+  for(const node of document.querySelectorAll('header div')){
+    if(node.textContent.trim()==='Build: Sep 12, 2026 · V4.4') node.textContent='Build: Sep 12, 2026 · V4.5';
+  }
+
   const TTESV_URL = 'https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Tagged-Bibles/TTESV%20-%20Tyndale%20Translation%20tags%20for%20ESV%20-%20TyndaleHouse.com%20STEPBible.org%20CC%20BY-NC.txt';
   const TTESV_BOOKS = {
     1:'Gen',2:'Exo',3:'Lev',4:'Num',5:'Deu',6:'Jos',7:'Jdg',8:'Rut',9:'1Sa',10:'2Sa',
