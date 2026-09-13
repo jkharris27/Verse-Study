@@ -1,9 +1,9 @@
-const CACHE='verse-study-v57';
+const CACHE='verse-study-v58';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 function injectEnhancements(html){
- if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=57"></script></body>');
- if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=57"></script></body>');
- if(!html.includes('tcw.js'))html=html.replace('</body>','<script src="./tcw.js?v=57"></script></body>');
+ if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=58"></script></body>');
+ if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=58"></script></body>');
+ if(!html.includes('tcw.js'))html=html.replace('</body>','<script src="./tcw.js?v=58"></script></body>');
  return html;
 }
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
