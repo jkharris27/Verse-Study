@@ -1,9 +1,10 @@
-const CACHE='verse-study-v58';
+const CACHE='verse-study-v59';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 function injectEnhancements(html){
- if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=58"></script></body>');
- if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=58"></script></body>');
- if(!html.includes('tcw.js'))html=html.replace('</body>','<script src="./tcw.js?v=58"></script></body>');
+ if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=59"></script></body>');
+ if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=59"></script></body>');
+ if(!html.includes('tcw.js'))html=html.replace('</body>','<script src="./tcw.js?v=59"></script></body>');
+ if(!html.includes('tcw-ui-fix.js'))html=html.replace('</body>','<script src="./tcw-ui-fix.js?v=59"></script></body>');
  return html;
 }
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
@@ -31,7 +32,7 @@ self.addEventListener('fetch',event=>{
   }));
   return;
  }
- if(url.pathname.endsWith('/v47.js')||url.pathname.endsWith('/v411.js')||url.pathname.endsWith('/tcw.js')||url.pathname.endsWith('/manifest.webmanifest')){
+ if(url.pathname.endsWith('/v47.js')||url.pathname.endsWith('/v411.js')||url.pathname.endsWith('/tcw.js')||url.pathname.endsWith('/tcw-ui-fix.js')||url.pathname.endsWith('/manifest.webmanifest')){
   event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
    const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response;
   }).catch(()=>caches.match(event.request)));
