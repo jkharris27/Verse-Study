@@ -17,21 +17,9 @@ if(settingsButton&&!$('forceRefresh')){
  b.id='forceRefresh';b.className='iconbtn refreshicon';b.setAttribute('aria-label','Refresh to newest version');b.title='Refresh to newest version';
  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M19 11a7.5 7.5 0 1 0 .2 4"/></svg>';
  settingsButton.insertAdjacentElement('afterend',b);
- b.onclick=async()=>{
+ b.onclick=()=>{
   b.classList.add('spinning');b.disabled=true;b.title='Updating…';
-  try{
-   if('serviceWorker' in navigator){
-    const regs=await navigator.serviceWorker.getRegistrations();
-    await Promise.all(regs.map(r=>r.update().catch(()=>{})));
-   }
-   if('caches' in window){
-    const keys=await caches.keys();
-    await Promise.all(keys.filter(k=>k.startsWith('verse-study-')).map(k=>caches.delete(k)));
-   }
-   await fetch(`./index.html?force=${Date.now()}`,{cache:'no-store'}).catch(()=>{});
-  }finally{
-   const u=new URL(location.href);u.searchParams.set('refresh',Date.now());location.replace(u.toString());
-  }
+  location.replace(`./update.html?force=${Date.now()}`);
  };
 }
 
