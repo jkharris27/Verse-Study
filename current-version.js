@@ -2,12 +2,27 @@
 const VERSION='V4.20';
 const versionRe=/V4\.(?:\d+(?:\.\d+)?)/g;
 function applyVersion(){
- for(const el of document.querySelectorAll('div')){
-  if(el.children.length===0&&versionRe.test(el.textContent||'')){
-   versionRe.lastIndex=0;
-   el.textContent=el.textContent.replace(versionRe,VERSION);
+ const h1=document.querySelector('header h1');
+ if(h1){
+  const titleBox=h1.parentElement;
+  const ref=document.getElementById('headerRef');
+  if(ref)ref.style.display='none';
+  let build=titleBox?.querySelector('[data-vs-build]');
+  if(!build&&titleBox){
+   build=document.createElement('div');
+   build.setAttribute('data-vs-build','');
+   build.style.cssText='font-size:10px;opacity:.65;margin-top:2px';
+   titleBox.appendChild(build);
   }
-  versionRe.lastIndex=0;
+  if(build)build.textContent=`Build: Sep 13, 2026 · ${VERSION}`;
+  if(titleBox){
+   for(const el of [...titleBox.children]){
+    if(el!==h1&&el!==ref&&el!==build&&/Build:/.test(el.textContent||''))el.style.display='none';
+   }
+  }
+ }
+ for(const el of document.querySelectorAll('.aboutline')){
+  if(/Version:/i.test(el.textContent||''))el.innerHTML=`<b>Version:</b> ${VERSION}`;
  }
 }
 window.VERSE_STUDY_VERSION=VERSION;
