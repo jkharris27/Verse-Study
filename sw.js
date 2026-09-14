@@ -1,14 +1,14 @@
-const CACHE='verse-study-v66';
+const CACHE='verse-study-v67';
 const SHELL=['./index.html','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 function injectEnhancements(html){
- if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=66"></script></body>');
- if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=66"></script></body>');
- if(!html.includes('tcw.js'))html=html.replace('</body>','<script src="./tcw.js?v=66"></script></body>');
- if(!html.includes('tcw-ui-fix.js'))html=html.replace('</body>','<script src="./tcw-ui-fix.js?v=66"></script></body>');
- if(!html.includes('ios-safe-area.js'))html=html.replace('</body>','<script src="./ios-safe-area.js?v=66"></script></body>');
- if(!html.includes('verse-cleanup.js'))html=html.replace('</body>','<script src="./verse-cleanup.js?v=66"></script></body>');
- if(!html.includes('info-sheets.js'))html=html.replace('</body>','<script src="./info-sheets.js?v=66"></script></body>');
- if(!html.includes('translation-notes.js'))html=html.replace('</body>','<script src="./translation-notes.js?v=66"></script></body>');
+ if(!html.includes('v47.js'))html=html.replace('</body>','<script src="./v47.js?v=67"></script></body>');
+ if(!html.includes('v411.js'))html=html.replace('</body>','<script src="./v411.js?v=67"></script></body>');
+ if(!html.includes('tcw.js'))html=html.replace('</body>','<script src="./tcw.js?v=67"></script></body>');
+ if(!html.includes('tcw-ui-fix.js'))html=html.replace('</body>','<script src="./tcw-ui-fix.js?v=67"></script></body>');
+ if(!html.includes('ios-safe-area.js'))html=html.replace('</body>','<script src="./ios-safe-area.js?v=67"></script></body>');
+ if(!html.includes('verse-cleanup.js'))html=html.replace('</body>','<script src="./verse-cleanup.js?v=67"></script></body>');
+ if(!html.includes('info-sheets.js'))html=html.replace('</body>','<script src="./info-sheets.js?v=67"></script></body>');
+ if(!html.includes('translation-notes.js'))html=html.replace('</body>','<script src="./translation-notes.js?v=67"></script></body>');
  return html;
 }
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
