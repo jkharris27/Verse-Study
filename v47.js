@@ -3,7 +3,16 @@ const $=id=>document.getElementById(id);
 const style=document.createElement('style');
 style.textContent=`.testamenttabs{grid-template-columns:repeat(3,1fr)!important}.study-list{display:grid;gap:2px}.study-choice{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:3px 0}.study-choice:last-child{border-bottom:0}.study-choice>button:first-child{font:inherit;color:var(--text);background:transparent;border:0;text-align:left;flex:1;padding:9px 5px;border-radius:7px}.study-choice>button:first-child:active{background:#2b3531}.study-detail{padding:18px}.study-verse{display:block;width:100%;font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:left;margin:8px 0}.saved-section{margin:0 0 18px;padding:0;border:0;border-radius:0;background:transparent}.saved-title{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:800;margin:12px 0 8px 2px}.saved-empty{font-size:13px;color:var(--muted);padding:6px 5px}.saved-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--line)}.saved-row:last-of-type{border-bottom:0}.saved-link{font:inherit;text-align:left;color:var(--text);background:transparent;border:0;padding:9px 5px;border-radius:7px}.saved-link:active{background:#2b3531}.saved-delete{border:0;background:transparent;color:var(--muted);font-size:20px;padding:4px 7px}.save-study-btn{width:100%;font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-top:10px}.refreshicon.spinning svg{animation:vs-spin .7s linear infinite}@keyframes vs-spin{to{transform:rotate(360deg)}}`;
 document.head.appendChild(style);
-for(const el of document.querySelectorAll('div'))if(el.textContent?.includes('V4.6')&&el.children.length===0)el.textContent=el.textContent.replace('V4.6','V4.10');
+
+// Keep the header intentionally simple: app name over build date only.
+const headerRef=$('headerRef');if(headerRef)headerRef.style.display='none';
+const headTitle=document.querySelector('header h1');
+if(headTitle?.parentElement){
+ const divs=[...headTitle.parentElement.children].filter(el=>el.tagName==='DIV');
+ const build=divs.find(el=>/Build:/i.test(el.textContent||''));
+ if(build)build.textContent='Build: Sep 13, 2026';
+}
+
 const tabs=document.querySelector('.testamenttabs');
 if(tabs&&!$('studiesTab')){const b=document.createElement('button');b.id='studiesTab';b.textContent='Studies';tabs.appendChild(b)}
 const saved=$('savedPickerSection');
@@ -47,4 +56,9 @@ renderSavedPicker=function(){if(!saved)return;const bookmarks=loadBookmarks(),st
 let sx=0,sy=0,st=0,overlaySwipe=false;
 document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();overlaySwipe=!!e.target.closest('.overlay.show,.shareoverlay.show')},{passive:true});
 document.addEventListener('touchend',e=>{if(!st||e.changedTouches.length!==1)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;st=0;if(dt>900||Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.25)return;if(overlaySwipe){if(dx>0)exitOverlay();return}if(e.target.closest('input,select,textarea,.commentary-body'))return;if(dx<0)next();else previous()},{passive:true});
+
+// V4.10 is old enough to be a reliable foothold on devices with stale caches.
+// If it loads, bootstrap every later enhancement directly from the network.
+function loadLatest(src){return new Promise(resolve=>{if([...document.scripts].some(s=>(s.src||'').includes('/'+src))){resolve();return}const s=document.createElement('script');s.src=`./${src}?latest=${Date.now()}`;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
+(async()=>{for(const src of ['v411.js','tcw.js','tcw-ui-fix.js','ios-safe-area.js','verse-cleanup.js','info-sheets.js','translation-notes.js','current-version.js'])await loadLatest(src)})();
 })();
