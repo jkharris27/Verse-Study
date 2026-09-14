@@ -1,0 +1,26 @@
+(()=>{
+const chapterCache=new Map();let runToken=0;
+const markerRe=/\[\d+\]|[ⓐ-ⓩ]/g;
+const escHtml=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function htmlToText(html){const box=document.createElement('div');box.innerHTML=String(html||'');return (box.textContent||box.innerText||'').replace(/\s+/g,' ').trim()}
+function stripStrong(text){return String(text||'').replace(/([A-Za-zÀ-ÿ])\d{3,5}\b/g,'$1').replace(/\s+/g,' ').trim()}
+function markerType(m){return /^\[\d+\]$/.test(m)?'Footnote':'Cross reference'}
+function parseComment(comment,verseMarkers){const text=htmlToText(comment);if(!text)return {map:new Map(),all:''};const map=new Map(),found=[...text.matchAll(markerRe)];
+ if(found.length){for(let i=0;i<found.length;i++){const mark=found[i][0],start=found[i].index+mark.length,end=i+1<found.length?found[i+1].index:text.length,val=text.slice(start,end).replace(/^\s*[:.\-–—]?\s*/,'').trim();if(val)map.set(mark,val)}}
+ if(!map.size&&verseMarkers.length===1)map.set(verseMarkers[0],text);
+ else if(!map.size&&verseMarkers.length>1){const chunks=text.split(/\s{2,}|\s*;\s*/).map(x=>x.trim()).filter(Boolean);if(chunks.length===verseMarkers.length)verseMarkers.forEach((m,i)=>map.set(m,chunks[i]))}
+ return {map,all:text};
+}
+async function getChapter(type,x){const key=`${type}:${x.book}:${x.chapter}`;if(chapterCache.has(key))return chapterCache.get(key);const p=(async()=>{const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),7000);try{const r=await fetch(`https://bolls.life/get-chapter/${type}/${x.book}/${x.chapter}/`,{signal:ctrl.signal,cache:'no-store'});if(!r.ok)throw new Error('notes source '+r.status);return await r.json()}finally{clearTimeout(timer)}})();chapterCache.set(key,p);try{return await p}catch(e){chapterCache.delete(key);throw e}}
+function verseFromChapter(data,verse){if(Array.isArray(data))return data.find(v=>Number(v.verse)===Number(verse))||null;if(Array.isArray(data?.verses))return data.verses.find(v=>Number(v.verse)===Number(verse))||null;return null}
+function renderVerse(el,plain,comment,type){if(!el)return;plain=stripStrong(plain);const markers=[...plain.matchAll(markerRe)].map(m=>m[0]);const parsed=parseComment(comment,markers);let out='',last=0,shown=0;for(const match of plain.matchAll(markerRe)){const mark=match[0],idx=match.index;out+=escHtml(plain.slice(last,idx));const note=parsed.map.get(mark);if(note){const n=shown++;out+=`<button type="button" class="vs-note-marker" data-vs-note="${n}" aria-label="${markerType(mark)} ${escHtml(mark)}">${escHtml(mark)}</button>`}last=idx+mark.length}out+=escHtml(plain.slice(last));if(!shown&&parsed.all&&markers.length){out+=` <button type="button" class="vs-note-marker vs-note-generic" data-vs-note="all" aria-label="Translation notes">*</button>`}el.innerHTML=`<div>${out}</div>`;
+ const notes=[];for(const mark of markers){const val=parsed.map.get(mark);if(val)notes.push({mark,val})}
+ el.querySelectorAll('[data-vs-note]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();const id=btn.dataset.vsNote;if(id==='all'){window.VerseStudyInfo?.open('Translation note',parsed.all,`${type}`);return}const item=notes[Number(id)];if(item)window.VerseStudyInfo?.open(markerType(item.mark),item.val,`${type} · ${item.mark}`)});
+}
+const css=document.createElement('style');css.textContent=`.vs-note-marker{display:inline;vertical-align:super;border:0;background:transparent;color:var(--gold);font:700 .72em/1 system-ui;padding:0 2px;margin:0;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}.vs-note-generic{font-size:.9em}`;document.head.appendChild(css);
+if(typeof loadTranslations==='function'){
+ loadTranslations=async function(x){const token=++runToken;const slots=[['preciseText',settings.precise],['looseText',settings.loose],['paraphraseText',settings.paraphrase]];slots.forEach(async([id,type],idx)=>{const el=document.getElementById(id);try{if(type==='TCW'){const r=await publicVerse(type,x);if(token!==runToken)return;if(el)el.innerHTML=`<div>${escHtml(r.text)}</div>`;if(idx===0){currentPreciseText=r.text;loadWordStudy({...x})}return}const chapter=await getChapter(type,x),item=verseFromChapter(chapter,x.verse);if(!item)throw new Error('verse missing');if(token!==runToken)return;const plain=htmlToText(item.text||'');renderVerse(el,plain,item.comment||'',type);const cleanForStudy=stripStrong(plain.replace(markerRe,' '));if(idx===0){currentPreciseText=cleanForStudy;loadWordStudy({...x})}}catch(e){if(token!==runToken)return;try{const r=await publicVerse(type,x);if(token!==runToken)return;if(el)el.innerHTML=`<div>${escHtml(r.text)}</div>`;if(idx===0){currentPreciseText=r.text;loadWordStudy({...x})}}catch{if(el)el.innerHTML=`<div class="small">${escHtml(type)} could not load. Tap the current verse to retry.</div>`}}})}
+}
+for(const el of document.querySelectorAll('div'))if(el.children.length===0&&/V4\.1[6-9]|V4\.20/.test(el.textContent||''))el.textContent=el.textContent.replace(/V4\.1[6-9]|V4\.20/,'V4.19');
+try{render()}catch{}
+})();
