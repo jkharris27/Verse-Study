@@ -1,6 +1,6 @@
-const CACHE='verse-study-v72';
+const CACHE='verse-study-v73';
 const SHELL=['./manifest.webmanifest','./icon.svg','./share-qr.svg'];
-const ASSET_VER='72';
+const ASSET_VER='73';
 function injectEnhancements(html){
  const scripts=['v47.js','v411.js','tcw.js','tcw-ui-fix.js','ios-safe-area.js','verse-cleanup.js','info-sheets.js','translation-notes.js','current-version.js'];
  for(const src of scripts)if(!html.includes(src))html=html.replace('</body>',`<script src="./${src}?v=${ASSET_VER}"></script></body>`);
