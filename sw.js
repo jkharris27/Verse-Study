@@ -1,5 +1,5 @@
-const CACHE='verse-study-v441';
-const SHELL=['./','./index.html','./styles-v421.css?v=441','./app-v421.js?v=441','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
+const CACHE='verse-study-v442';
+const SHELL=['./','./index.html','./styles-v421.css?v=442','./app-v421.js?v=442','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);for(const url of SHELL){try{await cache.add(url)}catch{}}await self.skipWaiting()})()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key!==CACHE&&key.startsWith('verse-study-'))await caches.delete(key);await self.clients.claim()})()));
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;if(event.request.mode==='navigate'){event.respondWith(fetch(event.request,{cache:'no-store'}).then(async r=>{const cache=await caches.open(CACHE);cache.put('./index.html',r.clone());return r}).catch(()=>caches.match('./index.html')));return}event.respondWith(fetch(event.request,{cache:'no-store'}).then(async r=>{const cache=await caches.open(CACHE);cache.put(event.request,r.clone());return r}).catch(()=>caches.match(event.request)))});
