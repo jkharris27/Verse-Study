@@ -91,7 +91,7 @@ function wordScore(w){let m=String(w.morph||'').toUpperCase(),s=0;if(/N-|V-|A-/.
 function cleanStrong(w){const x=Array.isArray(w.strongs)?w.strongs[0]:(w.strongs||'');return String(x).replace(/[A-Z]$/,'')}
 function morphExplanation(m){m=String(m||'').replace(/^robinson:/,'');const p=m.split('-'),kind={N:'noun',V:'verb',A:'adjective',ADV:'adverb',P:'pronoun',R:'relative pronoun',D:'demonstrative',T:'article',PREP:'preposition',CONJ:'conjunction'}[p[0]]||p[0]?.toLowerCase()||'word';let number='';if(['N','A','P','R','D','T'].includes(p[0])&&p[1])number={S:'singular',P:'plural'}[p[1][1]]||'';else if(p[0]==='V'&&p[2])number=p[2].endsWith('P')?'plural':p[2].endsWith('S')?'singular':'';return[kind,number].filter(Boolean).join(' · ')}
 async function cachedSourceText(url,cacheName){if('caches'in window){const cache=await caches.open(cacheName),saved=await cache.match(url);if(saved)return saved.text();const r=await fetch(url,{cache:'force-cache'});if(!r.ok)throw new Error();await cache.put(url,r.clone());return r.text()}const r=await fetch(url);if(!r.ok)throw new Error();return r.text()}
-function hebrewStrong(lemma){const p=String(lemma||'').split('/'),m=(p[p.length-1]||'').match(/\\d+/);return m?'H'+Number(m[0]):''}
+function hebrewStrong(lemma){const p=String(lemma||'').split('/'),m=(p[p.length-1]||'').match(/\d+/);return m?'H'+Number(m[0]):''}
 function hebrewGrammar(morph){const core=String(morph||'').split('/').pop().replace(/^H/,''),types={N:'noun',V:'verb',A:'adjective',P:'pronoun',R:'preposition',C:'conjunction',D:'adverb',T:'particle'};return types[core[0]]||'Hebrew word'}
 function cleanLexText(s){return String(s||'').replace(/\\s+/g,' ').replace(/^[:;,.\\s-]+|[:;,.\\s-]+$/g,'').trim()}
 let greekLexiconPromise=null;
