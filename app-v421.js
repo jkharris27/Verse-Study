@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='V4.53', SHARE_URL='https://jkharris27.github.io/Verse-Study/';
+const VERSION='V4.54', SHARE_URL='https://jkharris27.github.io/Verse-Study/';
 const $=id=>document.getElementById(id);
 const SAFE_STORAGE={getItem:k=>{try{return localStorage.getItem(k)}catch{return null}},setItem:(k,v)=>{try{localStorage.setItem(k,v)}catch{}},removeItem:k=>{try{localStorage.removeItem(k)}catch{}}};
 const names=['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi','Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
@@ -122,18 +122,138 @@ async function openVerseScreen(book,chapter){pickerBook=book;pickerChapter=chapt
 function renderSavedPicker(){const box=$('savedPickerSection'),bookmarks=loadBookmarks(),studies=loadStudies();let h='<div class="saved-title">Saved Studies</div>';if(!studies.length)h+='<div class="saved-empty">Named studies will appear here.</div>';else h+=studies.map((st,i)=>`<div class="study-choice"><span></span><button class="study-open" data-open-study="${i}">${esc(st.name||'Untitled study')}</button><button class="saved-delete" data-delete-study="${i}">×</button></div>`).join('');h+='<div class="saved-title">Current Bookmarks</div>';if(!bookmarks.length)h+='<div class="saved-empty">No bookmarks saved yet.</div>';else{h+=bookmarks.map((b,i)=>`<div class="saved-row"><input type="checkbox" class="study-select" data-index="${i}"><button class="saved-link" data-bookmark="${i}">${esc(refOf(b))}</button><button class="saved-delete" data-delete-bookmark="${i}">×</button></div>`).join('');h+='<button class="save-study-btn" id="saveSelectedStudy">Save selected bookmarks as a study</button>'}box.innerHTML=h;box.querySelectorAll('[data-bookmark]').forEach(b=>b.onclick=()=>goTo(bookmarks[+b.dataset.bookmark]));box.querySelectorAll('[data-delete-bookmark]').forEach(b=>b.onclick=()=>{const a=loadBookmarks();a.splice(+b.dataset.deleteBookmark,1);saveBookmarks(a);renderSavedPicker();updateBookmarkUI()});box.querySelectorAll('[data-open-study]').forEach(b=>b.onclick=()=>showStudy(+b.dataset.openStudy));box.querySelectorAll('[data-delete-study]').forEach(b=>b.onclick=()=>{const a=loadStudies();a.splice(+b.dataset.deleteStudy,1);saveStudies(a);renderSavedPicker()});const sb=$('saveSelectedStudy');if(sb)sb.onclick=()=>{const picked=[...box.querySelectorAll('.study-select:checked')].map(c=>bookmarks[+c.dataset.index]).filter(Boolean);if(!picked.length)return alert('Select at least one bookmark first.');const name=(prompt('Name this study:')||'').trim();if(!name)return;const a=loadStudies();a.push({name,verses:picked.map(v=>({...v}))});saveStudies(a);renderSavedPicker()}}
 function showStudy(i){const st=loadStudies()[i];if(!st)return;$('booksScreen').style.display='none';$('chapterScreen').style.display='none';$('verseScreen').style.display='none';$('studyDetailScreen').style.display='block';$('studyDetailTitle').textContent=st.name||'Study';$('studyDetailBody').innerHTML=(st.verses||[]).map((v,j)=>`<button class="study-verse" data-v="${j}">${esc(refOf(v))}</button>`).join('')||'<div class="saved-empty">This study has no verses.</div>';$('studyDetailBody').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>goTo(st.verses[+b.dataset.v]))}
 function openOverlay(id){$(id).classList.add('show');$(id).setAttribute('aria-hidden','false');document.body.style.overflow='hidden';history.pushState({vs:id},'')}
-function closeAll(){['pickerOverlay','settingsOverlay'].forEach(id=>{$(id).classList.remove('show');$(id).setAttribute('aria-hidden','true')});$('shareOverlay').classList.remove('show');$('booksScreen').style.display='block';$('chapterScreen').style.display='none';$('verseScreen').style.display='none';$('studyDetailScreen').style.display='none';document.body.style.overflow=''}
+function closeAll(){cancelSearchRequest();['pickerOverlay','settingsOverlay','searchOverlay'].forEach(id=>{$(id).classList.remove('show');$(id).setAttribute('aria-hidden','true')});$('shareOverlay').classList.remove('show');$('booksScreen').style.display='block';$('chapterScreen').style.display='none';$('verseScreen').style.display='none';$('studyDetailScreen').style.display='none';document.body.style.overflow=''}
 function exitOverlay(){if(history.state?.vs)history.back();else closeAll()}
 window.addEventListener('popstate',closeAll);
 $('cur').onclick=()=>{openOverlay('pickerOverlay');renderBooks()};$('closePicker').onclick=exitOverlay;$('backToBooks').onclick=()=>{$('chapterScreen').style.display='none';$('booksScreen').style.display='block';renderBookColumns();$('pickerOverlay').scrollTop=0};$('backToChapters').onclick=()=>{$('verseScreen').style.display='none';$('chapterScreen').style.display='block';$('pickerOverlay').scrollTop=0};$('closeStudyDetail').onclick=()=>{$('studyDetailScreen').style.display='none';$('booksScreen').style.display='block'};$('otTab').onclick=()=>setMainTab('OT');$('ntTab').onclick=()=>setMainTab('NT');$('studiesTab').onclick=()=>setMainTab('STUDIES');
 $('openSettings').onclick=()=>{syncSettingsUI();openOverlay('settingsOverlay')};$('closeSettings').onclick=exitOverlay;
+
+const SEARCH_PAGE_SIZE=25;
+let searchTimer=null,searchController=null,searchGeneration=0,searchPage=0,searchTotal=0,searchQuery='',searchExactMode=false,searchShown=0;
+function cancelSearchRequest(){
+ clearTimeout(searchTimer);
+ searchTimer=null;
+ searchGeneration++;
+ if(searchController){searchController.abort();searchController=null}
+}
+function openSearch(){
+ openOverlay('searchOverlay');
+ requestAnimationFrame(()=>$('searchInput').focus());
+}
+function showSearchResult(x,text){
+ const btn=document.createElement('button');
+ btn.className='searchresult';
+ btn.type='button';
+ const ref=document.createElement('span');
+ ref.className='searchref';
+ ref.textContent=refOf(x);
+ const body=document.createElement('span');
+ body.className='searchverse';
+ body.textContent=text;
+ btn.append(ref,body);
+ btn.onclick=()=>goTo(x);
+ $('searchResults').appendChild(btn);
+}
+function searchReference(q){
+ const match=q.match(/^(.+?)\\s+(\\d{1,3}):(\\d{1,3})$/i);
+ if(!match)return null;
+ const key=match[1].trim().toLowerCase().replace(/\\./g,'').replace(/\\s+/g,' ');
+ const book=REF_BOOK_ALIASES[key];
+ const x={book,chapter:Number(match[2]),verse:Number(match[3])};
+ return validLocation(x)?x:null;
+}
+async function runSearch(more=false){
+ clearTimeout(searchTimer);
+ searchTimer=null;
+ const q=$('searchInput').value.trim();
+ const exact=$('searchExact').checked;
+ if(q.length<2){
+  cancelSearchRequest();
+  $('searchResults').replaceChildren();
+  $('searchStatus').textContent='Enter at least two characters to search.';
+  $('searchMore').hidden=true;
+  return;
+ }
+ if(more&&(q!==searchQuery||exact!==searchExactMode))more=false;
+ const page=more?searchPage+1:1;
+ cancelSearchRequest();
+ const generation=searchGeneration;
+ searchController=new AbortController();
+ $('searchMore').hidden=true;
+ if(!more){
+  $('searchResults').replaceChildren();
+  searchShown=0;
+  $('searchStatus').textContent='Searching…';
+  const direct=searchReference(q);
+  if(direct){
+   searchQuery=q;searchExactMode=exact;searchPage=1;searchTotal=1;searchShown=1;
+   showSearchResult(direct,'Open this passage in Verse Study');
+   $('searchStatus').textContent='1 passage found';
+   try{
+    const hit=await publicVerse(settings.precise,direct);
+    if(generation===searchGeneration){
+     const line=$('searchResults').querySelector('.searchverse');
+     if(line)line.textContent=hit.text;
+    }
+   }catch{}
+   return;
+  }
+ }else $('searchStatus').textContent='Loading more results…';
+ const source=settings.precise==='CSB'?'CSB17':settings.precise;
+ const params=new URLSearchParams({search:q,page:String(page),limit:String(SEARCH_PAGE_SIZE)});
+ if(exact)params.set('match_whole','true');
+ try{
+  const response=await fetch(`https://bolls.life/v2/find/${encodeURIComponent(source)}?${params.toString()}`,{cache:'no-store',signal:searchController.signal});
+  if(!response.ok)throw new Error('Search request failed');
+  const data=await response.json();
+  if(generation!==searchGeneration)return;
+  const rows=Array.isArray(data.results)?data.results:[];
+  const total=Number(data.total);
+  searchQuery=q;searchExactMode=exact;searchPage=page;
+  searchTotal=Number.isFinite(total)?total:rows.length;
+  let added=0;
+  for(const row of rows){
+   const x={book:Number(row.book),chapter:Number(row.chapter),verse:Number(row.verse)};
+   if(!validLocation(x))continue;
+   showSearchResult(x,htmlToText(row.text||''));
+   added++;
+  }
+  searchShown+=added;
+  $('searchStatus').textContent=searchShown? `Showing ${searchShown.toLocaleString()} of ${searchTotal.toLocaleString()} related verses · ${source}` : 'No verses found. Try different words or describe the thought another way.';
+  $('searchMore').hidden=!rows.length||searchShown>=searchTotal||rows.length<SEARCH_PAGE_SIZE;
+ }catch(err){
+  if(generation!==searchGeneration||err?.name==='AbortError')return;
+  $('searchStatus').textContent=more?'Could not load more results. Try again.':'Search is unavailable right now. Check your connection and try again.';
+  $('searchMore').hidden=!more;
+ }finally{
+  if(generation===searchGeneration)searchController=null;
+ }
+}
+function queueSearch(){
+ cancelSearchRequest();
+ $('searchMore').hidden=true;
+ if($('searchInput').value.trim().length<2){
+  $('searchResults').replaceChildren();
+  $('searchStatus').textContent='Search for words or describe an idea to find related Bible verses.';
+  return;
+ }
+ searchTimer=setTimeout(()=>runSearch(false),500);
+}
+$('openSearch').onclick=openSearch;
+$('closeSearch').onclick=exitOverlay;
+$('searchOverlay').onclick=e=>{if(e.target===$('searchOverlay'))exitOverlay()};
+$('searchForm').onsubmit=e=>{e.preventDefault();runSearch(false)};
+$('searchInput').oninput=queueSearch;
+$('searchExact').onchange=()=>{if($('searchInput').value.trim().length>=2)runSearch(false)};
+$('searchMore').onclick=()=>runSearch(true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('searchOverlay').classList.contains('show'))exitOverlay()});
 function openShare(){$('shareOverlay').classList.add('show');$('shareOverlay').setAttribute('aria-hidden','false');$('shareStatus').textContent='';document.body.style.overflow='hidden'}function closeShare(){$('shareOverlay').classList.remove('show');$('shareOverlay').setAttribute('aria-hidden','true');document.body.style.overflow=''}
 $('openShare').onclick=openShare;$('closeShare').onclick=closeShare;$('shareOverlay').onclick=e=>{if(e.target===$('shareOverlay'))closeShare()};async function copyShare(){try{await navigator.clipboard.writeText(SHARE_URL)}catch{}$('shareStatus').textContent='Link copied'}$('copyShare').onclick=copyShare;$('nativeShare').onclick=async()=>navigator.share?navigator.share({title:'Verse Study',url:SHARE_URL}).catch(()=>{}):copyShare();
 $('bookmarkBtn').onclick=toggleCurrentBookmark;
 async function previous(){if(current.verse>1)return goTo({...current,verse:current.verse-1});if(current.chapter>1){const ch=current.chapter-1,n=await verseCount(current.book,ch).catch(()=>1);return goTo({book:current.book,chapter:ch,verse:n||1})}if(current.book>1){const b=bookById(current.book-1),ch=b.chapters,n=await verseCount(b.id,ch).catch(()=>1);return goTo({book:b.id,chapter:ch,verse:n||1})}}
 async function next(){const n=await verseCount(current.book,current.chapter).catch(()=>current.verse+1);if(current.verse<n)return goTo({...current,verse:current.verse+1});const b=bookById(current.book);if(current.chapter<b.chapters)return goTo({book:current.book,chapter:current.chapter+1,verse:1});if(current.book<66)return goTo({book:current.book+1,chapter:1,verse:1})}
 $('prev').onclick=previous;$('next').onclick=next;
-let sx=0,sy=0,st=0,overlaySwipe=false;document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();overlaySwipe=!!e.target.closest('.overlay.show,.shareoverlay.show')},{passive:true});document.addEventListener('touchend',e=>{if(!st||e.changedTouches.length!==1)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;st=0;if(dt>900||Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.25)return;if(overlaySwipe){if(dx>0)exitOverlay();return}if(e.target.closest('input,select,textarea,.commentary-body'))return;const verseScroller=e.target.closest('.translation-scroll');if(verseScroller&&activeTopicSection&&activeTopicSection.book===current.book&&activeTopicSection.chapter===current.chapter){if(dx<0&&activeTopicSection.nextStart)return goTo({...current,verse:activeTopicSection.nextStart});if(dx>0&&activeTopicSection.prevStart)return goTo({...current,verse:activeTopicSection.prevStart})}if(dx<0)next();else previous()},{passive:true});
-async function init(){syncSettingsUI();await refreshTcwStatus();render();if('serviceWorker'in navigator&&location.protocol==='https:'){try{const r=await navigator.serviceWorker.register('./sw.js?v=454');r.update()}catch{}}}
+let sx=0,sy=0,st=0,overlaySwipe=false;document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();overlaySwipe=!!e.target.closest('.overlay.show,.shareoverlay.show,.searchoverlay.show')},{passive:true});document.addEventListener('touchend',e=>{if(!st||e.changedTouches.length!==1)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;st=0;if(dt>900||Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.25)return;if(overlaySwipe){if(dx>0)exitOverlay();return}if(e.target.closest('input,select,textarea,.commentary-body'))return;const verseScroller=e.target.closest('.translation-scroll');if(verseScroller&&activeTopicSection&&activeTopicSection.book===current.book&&activeTopicSection.chapter===current.chapter){if(dx<0&&activeTopicSection.nextStart)return goTo({...current,verse:activeTopicSection.nextStart});if(dx>0&&activeTopicSection.prevStart)return goTo({...current,verse:activeTopicSection.prevStart})}if(dx<0)next();else previous()},{passive:true});
+async function init(){syncSettingsUI();await refreshTcwStatus();render();if('serviceWorker'in navigator&&location.protocol==='https:'){try{const r=await navigator.serviceWorker.register('./sw.js?v=455');r.update()}catch{}}}
 init();
 })();
