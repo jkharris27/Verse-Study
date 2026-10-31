@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='V4.54', SHARE_URL='https://jkharris27.github.io/Verse-Study/';
+const VERSION='V4.55', SHARE_URL='https://jkharris27.github.io/Verse-Study/';
 const $=id=>document.getElementById(id);
 const SAFE_STORAGE={getItem:k=>{try{return localStorage.getItem(k)}catch{return null}},setItem:(k,v)=>{try{localStorage.setItem(k,v)}catch{}},removeItem:k=>{try{localStorage.removeItem(k)}catch{}}};
 const names=['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi','Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
@@ -129,7 +129,7 @@ $('cur').onclick=()=>{openOverlay('pickerOverlay');renderBooks()};$('closePicker
 $('openSettings').onclick=()=>{syncSettingsUI();openOverlay('settingsOverlay')};$('closeSettings').onclick=exitOverlay;
 
 const SEARCH_PAGE_SIZE=25;
-let searchTimer=null,searchController=null,searchGeneration=0,searchPage=0,searchTotal=0,searchQuery='',searchExactMode=false,searchShown=0;
+let searchTimer=null,searchController=null,searchGeneration=0,searchPage=0,searchTotal=0,searchQuery='',searchExactMode=false,searchShown=0,searchReturnScroll=0;
 function cancelSearchRequest(){
  clearTimeout(searchTimer);
  searchTimer=null;
@@ -137,8 +137,23 @@ function cancelSearchRequest(){
  if(searchController){searchController.abort();searchController=null}
 }
 function openSearch(){
+ const returningToResults=$('searchResults').childElementCount>0;
  openOverlay('searchOverlay');
- requestAnimationFrame(()=>$('searchInput').focus());
+ requestAnimationFrame(()=>{
+  if(returningToResults)$('searchResults').scrollTop=searchReturnScroll;
+  else if(!$('searchInput').value.trim())$('searchInput').focus();
+ });
+}
+function clearSearch(){
+ cancelSearchRequest();
+ $('searchInput').value='';
+ $('searchExact').checked=false;
+ $('searchResults').replaceChildren();
+ $('searchStatus').textContent='Search for words or describe an idea to find related Bible verses.';
+ $('searchMore').hidden=true;
+ searchQuery='';searchExactMode=false;searchPage=0;searchTotal=0;searchShown=0;searchReturnScroll=0;
+ $('searchResults').scrollTop=0;
+ $('searchInput').focus();
 }
 function showSearchResult(x,text){
  const btn=document.createElement('button');
@@ -151,7 +166,7 @@ function showSearchResult(x,text){
  body.className='searchverse';
  body.textContent=text;
  btn.append(ref,body);
- btn.onclick=()=>goTo(x);
+ btn.onclick=()=>{searchReturnScroll=$('searchResults').scrollTop;goTo(x)};
  $('searchResults').appendChild(btn);
 }
 function searchReference(q){
@@ -182,7 +197,8 @@ async function runSearch(more=false){
  $('searchMore').hidden=true;
  if(!more){
   $('searchResults').replaceChildren();
-  searchShown=0;
+  searchShown=0;searchReturnScroll=0;
+  $('searchResults').scrollTop=0;
   $('searchStatus').textContent='Searching…';
   const direct=searchReference(q);
   if(direct){
@@ -246,6 +262,8 @@ $('searchForm').onsubmit=e=>{e.preventDefault();runSearch(false)};
 $('searchInput').oninput=queueSearch;
 $('searchExact').onchange=()=>{if($('searchInput').value.trim().length>=2)runSearch(false)};
 $('searchMore').onclick=()=>runSearch(true);
+$('clearSearch').onclick=clearSearch;
+$('searchResults').addEventListener('scroll',()=>{searchReturnScroll=$('searchResults').scrollTop},{passive:true});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('searchOverlay').classList.contains('show'))exitOverlay()});
 function openShare(){$('shareOverlay').classList.add('show');$('shareOverlay').setAttribute('aria-hidden','false');$('shareStatus').textContent='';document.body.style.overflow='hidden'}function closeShare(){$('shareOverlay').classList.remove('show');$('shareOverlay').setAttribute('aria-hidden','true');document.body.style.overflow=''}
 $('openShare').onclick=openShare;$('closeShare').onclick=closeShare;$('shareOverlay').onclick=e=>{if(e.target===$('shareOverlay'))closeShare()};async function copyShare(){try{await navigator.clipboard.writeText(SHARE_URL)}catch{}$('shareStatus').textContent='Link copied'}$('copyShare').onclick=copyShare;$('nativeShare').onclick=async()=>navigator.share?navigator.share({title:'Verse Study',url:SHARE_URL}).catch(()=>{}):copyShare();
@@ -254,6 +272,6 @@ async function previous(){if(current.verse>1)return goTo({...current,verse:curre
 async function next(){const n=await verseCount(current.book,current.chapter).catch(()=>current.verse+1);if(current.verse<n)return goTo({...current,verse:current.verse+1});const b=bookById(current.book);if(current.chapter<b.chapters)return goTo({book:current.book,chapter:current.chapter+1,verse:1});if(current.book<66)return goTo({book:current.book+1,chapter:1,verse:1})}
 $('prev').onclick=previous;$('next').onclick=next;
 let sx=0,sy=0,st=0,overlaySwipe=false;document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();overlaySwipe=!!e.target.closest('.overlay.show,.shareoverlay.show,.searchoverlay.show')},{passive:true});document.addEventListener('touchend',e=>{if(!st||e.changedTouches.length!==1)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;st=0;if(dt>900||Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.25)return;if(overlaySwipe){if(dx>0)exitOverlay();return}if(e.target.closest('input,select,textarea,.commentary-body'))return;const verseScroller=e.target.closest('.translation-scroll');if(verseScroller&&activeTopicSection&&activeTopicSection.book===current.book&&activeTopicSection.chapter===current.chapter){if(dx<0&&activeTopicSection.nextStart)return goTo({...current,verse:activeTopicSection.nextStart});if(dx>0&&activeTopicSection.prevStart)return goTo({...current,verse:activeTopicSection.prevStart})}if(dx<0)next();else previous()},{passive:true});
-async function init(){syncSettingsUI();await refreshTcwStatus();render();if('serviceWorker'in navigator&&location.protocol==='https:'){try{const r=await navigator.serviceWorker.register('./sw.js?v=455');r.update()}catch{}}}
+async function init(){syncSettingsUI();await refreshTcwStatus();render();if('serviceWorker'in navigator&&location.protocol==='https:'){try{const r=await navigator.serviceWorker.register('./sw.js?v=456');r.update()}catch{}}}
 init();
 })();
