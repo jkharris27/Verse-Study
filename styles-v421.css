@@ -36,3 +36,9 @@ header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);
 .searchmore[hidden]{display:none}
 @media(max-width:400px){.header-actions{gap:5px}.searchicon,.bookmarkicon,.iconbtn,.shareicon{width:35px;height:35px}}
 @media(max-height:620px){.searchdialog{height:94dvh}}
+
+/* V4.55 — retained search and clear action */
+.searchoptions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 16px 7px}
+.searchoptions .searchoption{padding:7px 0;min-width:0}
+.searchclear{font:inherit;font-size:13px;font-weight:700;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--gold);padding:6px 12px;flex-shrink:0}
+.searchclear:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
