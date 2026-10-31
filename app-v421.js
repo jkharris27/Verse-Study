@@ -155,9 +155,9 @@ function showSearchResult(x,text){
  $('searchResults').appendChild(btn);
 }
 function searchReference(q){
- const match=q.match(/^(.+?)\\s+(\\d{1,3}):(\\d{1,3})$/i);
+ const match=q.match(/^(.+?)\s+(\d{1,3}):(\d{1,3})$/i);
  if(!match)return null;
- const key=match[1].trim().toLowerCase().replace(/\\./g,'').replace(/\\s+/g,' ');
+ const key=match[1].trim().toLowerCase().replace(/\./g,'').replace(/\s+/g,' ');
  const book=REF_BOOK_ALIASES[key];
  const x={book,chapter:Number(match[2]),verse:Number(match[3])};
  return validLocation(x)?x:null;
