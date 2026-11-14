@@ -27,7 +27,7 @@ function rebuild(){
  if(!api)return;
  byChapter=new Map();
  catalog=[...(window.VS_MARKING_CATALOG||[]),...(window.VS_NUMBERED_LESSONS||[])].map(x=>normalize(x,x.source));
- catalog.push(...api.loadStudies().map(x=>normalize(x,'user')));
+ catalog.push(...api.loadStudies().map((x,i)=>Object.assign(normalize(x,'user'),{userIndex:i})));
  for(var s of catalog)for(var i=0;i<s.entries.length;i++){
   var p=s.entries[i].loc;if(!p)continue;
   var key=p.book+':'+p.chapter;
@@ -99,12 +99,23 @@ function openStudy(st,index){
  if(st.source!=='user'){
   var copy=el('button','vs-study-copy','Copy to My Studies');
   copy.type='button';copy.onclick=function(){
-   var saved=api.loadStudies(),locs=st.entries.filter(x=>x.loc).map(x=>({book:x.loc.book,chapter:x.loc.chapter,verse:x.loc.verse}));
+   var saved=api.loadStudies(),copied=st.entries.map(x=>({ref:x.ref,note:x.note,label:x.label}));
    var name=prompt('Name your editable copy:',st.name);if(!name||!name.trim())return;
-   saved.push({id:'study-'+Date.now(),name:name.trim(),color:st.color,verses:locs});
+   saved.push({id:'study-'+Date.now(),name:name.trim(),color:st.color,entries:copied});
    api.saveStudies(saved);rebuild();api.render();api.infoClose();
   };
   body.appendChild(copy);
+ }
+ if(st.source==='user'){
+  var editor=el('div','vs-study-editor');
+  var add=el('button','','+ Add '+api.refOf(api.current()));
+  add.onclick=function(){var next=changePersonal(st,function(original){if(Array.isArray(original.entries))original.entries.push({ref:api.refOf(api.current())});else{original.verses=Array.isArray(original.verses)?original.verses:[];original.verses.push({...api.current()})}});if(next)openStudy(next,next.entries.length-1)};
+  var up=el('button','','Move up'),down=el('button','','Move down'),remove=el('button','','Remove step');
+  function move(offset){var next=changePersonal(st,function(original){var arr=Array.isArray(original.entries)?original.entries:original.verses;if(!Array.isArray(arr))return;var target=index+offset;if(target<0||target>=arr.length)return;var item=arr[index];arr[index]=arr[target];arr[target]=item});if(next)openStudy(next,index+offset)}
+  up.onclick=function(){move(-1)};down.onclick=function(){move(1)};
+  remove.onclick=function(){if(n===1)return alert('A study needs at least one verse.');var next=changePersonal(st,function(original){var arr=Array.isArray(original.entries)?original.entries:original.verses;if(Array.isArray(arr))arr.splice(index,1)});if(next)openStudy(next,Math.min(index,next.entries.length-1))};
+  up.disabled=index===0;down.disabled=index===n-1;remove.disabled=n===1;
+  [add,up,down,remove].forEach(b=>{b.type='button';editor.appendChild(b)});body.appendChild(editor);
  }
  var p=st.entries[index].loc;
  step.textContent='Step '+(index+1)+' of '+n;
@@ -140,6 +151,12 @@ function group(box,label,items,openDefault){
  items.forEach(st=>details.appendChild(studyButton(st)));
  box.appendChild(details);
  return details;
+}
+function changePersonal(st,edit){
+ var saved=api.loadStudies(),i=Number(st.userIndex);
+ if(!Number.isInteger(i)||i<0||!saved[i])return null;
+ edit(saved[i]);api.saveStudies(saved);rebuild();api.render();
+ return catalog.find(x=>x.source==='user'&&x.userIndex===i)||null;
 }
 function savePersonalStudy(name,locations,color){
  var existing=api.loadStudies(),title=String(name||'').trim();if(!title)return;
@@ -198,7 +215,7 @@ function renderPicker(){
   };
   box.appendChild(save);
  }
- input.oninput=function(){var q=input.value.trim().toLowerCase();box.querySelectorAll('[data-name]').forEach(r=>r.hidden=!!q&&!r.dataset.name.includes(q))};
+ input.oninput=function(){var q=input.value.trim().toLowerCase();box.querySelectorAll('[data-name]').forEach(r=>r.hidden=!!q&&!r.dataset.name.includes(q));if(q)box.querySelectorAll('details.vs-study-picker-group').forEach(d=>d.open=true)};
 }
 function connect(helpers){api=helpers;rebuild()}
 window.VS_STUDIES={connect:connect,rebuild:rebuild,decorateVerse:addVerseMarking,renderPicker:renderPicker,openStudy:openStudy};
