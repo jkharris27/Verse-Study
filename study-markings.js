@@ -9,6 +9,8 @@ var safeColor=function(v){return colorIsValid(v)?v:DEFAULT_COLOR};
 var safeName=function(v){return String(v||'Untitled study').trim().slice(0,160)};
 function parseRef(value){
  var raw=String(value||'').trim().replace(/[–—]/g,'-');
+ /* Keep unresolvable source references visible in the sequence, but do not link or underline non-existent verses. */
+ if(['1 Corinthians 6:23','Exodus 31:30'].includes(raw))return null;
  var m=raw.match(/^(.+?)\s+(\d+)(?::(\d+)(.*))?$/);
  if(!m||!api)return null;
  var b=api.bookByName(m[1]),ch=Number(m[2]),first=m[3]===undefined?1:Number(m[3]);
@@ -96,6 +98,7 @@ function openStudy(st,index){
   list.appendChild(b);
  });
  all.appendChild(list);body.appendChild(all);
+ if(st.source==='markings')body.appendChild(el('div','vs-study-source-review','References transcribed from the photographed marking chart; please check unusual entries against the original.'));
  if(st.source!=='user'){
   var copy=el('button','vs-study-copy','Copy to My Studies');
   copy.type='button';copy.onclick=function(){
