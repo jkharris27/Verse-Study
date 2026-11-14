@@ -1842,7 +1842,12 @@ window.VS_MARKING_CATALOG = [
       {
         "ref": "Daniel 7:1",
         "label": "Daniel 7, 8, and 9 (overview)",
-        "note": "The source chart lists Daniel chapters 7, 8 and 9 together as the first text. This opens at Daniel 7:1."
+        "note": "The source chart lists Daniel chapters 7, 8 and 9 together as the first text. This opens at Daniel 7:1.",
+        "markChapters": [
+          7,
+          8,
+          9
+        ]
       },
       {
         "ref": "Daniel 7:9-10"
