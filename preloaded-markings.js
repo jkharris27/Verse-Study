@@ -1,5 +1,7 @@
 /* Color-coded marking study chart provided by the user.
-   All passages require source review before being treated as a verified transcription.
+   Every study starts with the First Text key (step 1), followed by steps 2+ in print order.
+   The chart uses SB for both Sabbath and Spiritual Babylon; unique IDs distinguish them.
+   Unusual references are preserved as photographed rather than silently corrected.
    Colors are adapted for contrast on the app's dark theme. */
 window.VS_MARKING_CATALOG = [
   {
@@ -10,6 +12,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#d2b36b",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "2 Peter 1:21"
+      },
       {
         "ref": "2 Timothy 3:16"
       },
@@ -60,19 +65,22 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Psalms 90:2"
+      },
+      {
         "ref": "Daniel 2:20"
       },
       {
         "ref": "Daniel 2:21"
       },
       {
-        "ref": "Isaiah 48:10"
+        "ref": "Isaiah 46:10"
       },
       {
         "ref": "Isaiah 45:21"
       },
       {
-        "ref": "Psalms 33:6-9"
+        "ref": "Psalms 33:6,9"
       },
       {
         "ref": "Exodus 34:6-7"
@@ -109,7 +117,10 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
-        "ref": "Matthew 13:24-25"
+        "ref": "1 John 4:8"
+      },
+      {
+        "ref": "Matthew 13:24-28"
       },
       {
         "ref": "Ezekiel 28:12-17"
@@ -130,7 +141,7 @@ window.VS_MARKING_CATALOG = [
         "ref": "Genesis 3:1-7"
       },
       {
-        "ref": "Isaiah 58:1-2"
+        "ref": "Isaiah 59:1-2"
       },
       {
         "ref": "Romans 6:23"
@@ -175,6 +186,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#7da5e1",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Micah 5:2"
+      },
       {
         "ref": "Isaiah 7:14"
       },
@@ -225,6 +239,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Matthew 1:23"
+      },
+      {
         "ref": "John 1:1"
       },
       {
@@ -271,10 +288,13 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
-        "ref": "John 1:27-31"
+        "ref": "1 John 4:8,9"
       },
       {
-        "ref": "Genesis 3:3"
+        "ref": "Genesis 1:27-31"
+      },
+      {
+        "ref": "Genesis 3:8"
       },
       {
         "ref": "Romans 6:23"
@@ -283,7 +303,7 @@ window.VS_MARKING_CATALOG = [
         "ref": "Romans 3:23"
       },
       {
-        "ref": "Romans 5:18"
+        "ref": "Romans 5:18-19"
       },
       {
         "ref": "Galatians 3:13"
@@ -298,7 +318,7 @@ window.VS_MARKING_CATALOG = [
         "ref": "Acts 3:19"
       },
       {
-        "ref": "John 1:9"
+        "ref": "1 John 1:9"
       },
       {
         "ref": "Romans 8:1"
@@ -325,6 +345,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#d2b36b",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Micah 7:18-19"
+      },
       {
         "ref": "Hebrews 8:12"
       },
@@ -375,6 +398,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Daniel 2:1"
+      },
+      {
         "ref": "Daniel 2:2-11"
       },
       {
@@ -408,10 +434,10 @@ window.VS_MARKING_CATALOG = [
         "ref": "Daniel 5:28"
       },
       {
-        "ref": "Daniel 5:30"
+        "ref": "Daniel 5:30-31"
       },
       {
-        "ref": "Isaiah 44:27"
+        "ref": "Isaiah 44:27-28"
       },
       {
         "ref": "Isaiah 45:1"
@@ -456,6 +482,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#d2b36b",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "John 14:1-3"
+      },
       {
         "ref": "Acts 1:9-11"
       },
@@ -512,10 +541,13 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Matthew 24:3"
+      },
+      {
         "ref": "Matthew 24:4-5"
       },
       {
-        "ref": "Matthew 24:11"
+        "ref": "Matthew 24:11,24"
       },
       {
         "ref": "Matthew 24:6-7"
@@ -546,6 +578,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Revelation 14:6,7"
+      },
+      {
         "ref": "Revelation 22:12"
       },
       {
@@ -568,6 +603,9 @@ window.VS_MARKING_CATALOG = [
       },
       {
         "ref": "Romans 14:12"
+      },
+      {
+        "ref": "Psalms 87:6"
       },
       {
         "ref": "Jeremiah 2:22"
@@ -606,6 +644,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#d2b36b",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Psalms 111:7,8"
+      },
       {
         "ref": "Romans 3:20"
       },
@@ -658,6 +699,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#789fee",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Revelation 14:6-7"
+      },
       {
         "ref": "Revelation 4:11"
       },
@@ -717,6 +761,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Exodus 31:17-18"
+      },
+      {
         "ref": "Ezekiel 20:12"
       },
       {
@@ -775,19 +822,25 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "John 17:17"
+      },
+      {
         "ref": "Proverbs 23:23"
       },
       {
-        "ref": "Habakkuk 1:13"
+        "ref": "Hebrews 13:8"
       },
       {
         "ref": "Psalms 89:34"
       },
       {
+        "ref": "Exodus 31:18"
+      },
+      {
         "ref": "Matthew 5:17-18"
       },
       {
-        "ref": "Daniel 2:43"
+        "ref": "Genesis 2:1-3"
       },
       {
         "ref": "Luke 4:16"
@@ -826,6 +879,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#78a8e9",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Isaiah 56:2"
+      },
       {
         "ref": "Deuteronomy 28:1-2,15"
       },
@@ -872,6 +928,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#d2b36b",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Hebrews 11:6"
+      },
       {
         "ref": "Romans 12:3"
       },
@@ -925,6 +984,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "3 John 1:2"
+      },
+      {
         "ref": "1 Thessalonians 5:23"
       },
       {
@@ -950,6 +1012,9 @@ window.VS_MARKING_CATALOG = [
       },
       {
         "ref": "Proverbs 31:4-5"
+      },
+      {
+        "ref": "Revelation 5:10"
       },
       {
         "ref": "Genesis 1:29"
@@ -988,6 +1053,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#d2b36b",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "John 11:11-14"
+      },
       {
         "ref": "1 Thessalonians 4:15-16"
       },
@@ -1041,13 +1109,16 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "John 14:1-3"
+      },
+      {
         "ref": "Acts 1:9-11"
       },
       {
         "ref": "1 Thessalonians 4:16-17"
       },
       {
-        "ref": "1 Corinthians 15:51-52"
+        "ref": "John 5:28-29"
       },
       {
         "ref": "2 Thessalonians 1:8"
@@ -1098,6 +1169,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#77b99e",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "John 14:1-3"
+      },
       {
         "ref": "2 Peter 3:10-13"
       },
@@ -1160,6 +1234,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Jeremiah 31:3"
+      },
+      {
         "ref": "2 Peter 3:9"
       },
       {
@@ -1190,7 +1267,16 @@ window.VS_MARKING_CATALOG = [
         "ref": "Matthew 3:11-12"
       },
       {
+        "ref": "Jeremiah 17:19-27"
+      },
+      {
         "ref": "Revelation 20:10"
+      },
+      {
+        "ref": "Exodus 21:6"
+      },
+      {
+        "ref": "1 Samuel 1:22,28"
       },
       {
         "ref": "2 Peter 2:4"
@@ -1221,6 +1307,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Revelation 13:1-2"
+      },
+      {
         "ref": "Daniel 7:17"
       },
       {
@@ -1236,7 +1325,10 @@ window.VS_MARKING_CATALOG = [
         "ref": "Revelation 13:5"
       },
       {
-        "ref": "Revelation 13:3"
+        "ref": "Luke 5:21"
+      },
+      {
+        "ref": "John 10:33"
       },
       {
         "ref": "Revelation 13:5"
@@ -1270,6 +1362,24 @@ window.VS_MARKING_CATALOG = [
       },
       {
         "ref": "Revelation 14:7"
+      },
+      {
+        "ref": "Revelation 14:9-11"
+      },
+      {
+        "ref": "Revelation 14:12"
+      },
+      {
+        "ref": "Romans 6:16"
+      },
+      {
+        "ref": "Mark 7:9"
+      },
+      {
+        "ref": "John 14:15"
+      },
+      {
+        "ref": "Psalms 9:1"
       }
     ]
   },
@@ -1282,19 +1392,27 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
-        "ref": "Revelation 14:6"
+        "ref": "Revelation 14:6-12"
       },
       {
-        "ref": "Revelation 14:7"
+        "ref": "Revelation 14:6",
+        "label": "Revelation 14:6 (first part)"
       },
       {
-        "ref": "Revelation 14:7"
+        "ref": "Revelation 14:7",
+        "label": "Revelation 14:6 (last part)"
       },
       {
-        "ref": "Revelation 14:7"
+        "ref": "Revelation 14:7",
+        "label": "Revelation 14:7 (first part)"
       },
       {
-        "ref": "Revelation 14:7"
+        "ref": "Revelation 14:7",
+        "label": "Revelation 14:7 (middle)"
+      },
+      {
+        "ref": "Revelation 14:7",
+        "label": "Revelation 14:7 (last part)"
       },
       {
         "ref": "Revelation 4:11"
@@ -1325,11 +1443,14 @@ window.VS_MARKING_CATALOG = [
   {
     "id": "mark-sb2",
     "source": "markings",
-    "code": "SB2",
+    "code": "SB",
     "name": "Spiritual Babylon (Rev 17)",
     "color": "#aa93cb",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Revelation 17:1-5"
+      },
       {
         "ref": "Daniel 8:12"
       },
@@ -1407,6 +1528,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Amos 3:7"
+      },
+      {
         "ref": "Numbers 12:6"
       },
       {
@@ -1437,6 +1561,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#e78789",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Deuteronomy 13:1-4"
+      },
       {
         "ref": "Jeremiah 28:8-9"
       },
@@ -1471,6 +1598,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#78a4ea",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Matthew 28:19-20"
+      },
       {
         "ref": "Mark 16:16"
       },
@@ -1508,6 +1638,9 @@ window.VS_MARKING_CATALOG = [
         "ref": "Acts 2:41-42"
       },
       {
+        "ref": "1 Corinthians 12:13"
+      },
+      {
         "ref": "Matthew 28:19-20"
       },
       {
@@ -1525,6 +1658,9 @@ window.VS_MARKING_CATALOG = [
     "entries": [
       {
         "ref": "Deuteronomy 8:18"
+      },
+      {
+        "ref": "Psalms 2:1"
       },
       {
         "ref": "Haggai 2:8"
@@ -1575,6 +1711,9 @@ window.VS_MARKING_CATALOG = [
     "color": "#6bb0e3",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "2 Corinthians 5:20"
+      },
       {
         "ref": "Isaiah 62:10"
       },
@@ -1635,6 +1774,64 @@ window.VS_MARKING_CATALOG = [
     ]
   },
   {
+    "id": "mark-hs",
+    "source": "markings",
+    "code": "HS",
+    "name": "Holy Spirit",
+    "color": "#d2b36b",
+    "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
+    "entries": [
+      {
+        "ref": "John 16:7"
+      },
+      {
+        "ref": "John 16:8"
+      },
+      {
+        "ref": "Matthew 28:19-20"
+      },
+      {
+        "ref": "Ephesians 4:30"
+      },
+      {
+        "ref": "Genesis 6:3"
+      },
+      {
+        "ref": "Romans 8:26"
+      },
+      {
+        "ref": "Romans 8:27"
+      },
+      {
+        "ref": "Romans 8:16"
+      },
+      {
+        "ref": "Galatians 5:22-26"
+      },
+      {
+        "ref": "Ezekiel 36:26-27"
+      },
+      {
+        "ref": "Genesis 1:2"
+      },
+      {
+        "ref": "Romans 8:11"
+      },
+      {
+        "ref": "John 16:13-14"
+      },
+      {
+        "ref": "John 14:26"
+      },
+      {
+        "ref": "Matthew 12:31-32"
+      },
+      {
+        "ref": "Romans 8:14"
+      }
+    ]
+  },
+  {
     "id": "mark-lp",
     "source": "markings",
     "code": "LP",
@@ -1642,6 +1839,11 @@ window.VS_MARKING_CATALOG = [
     "color": "#e7a4ab",
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
+      {
+        "ref": "Daniel 7:1",
+        "label": "Daniel 7, 8, and 9 (overview)",
+        "note": "The source chart lists Daniel chapters 7, 8 and 9 together as the first text. This opens at Daniel 7:1."
+      },
       {
         "ref": "Daniel 7:9-10"
       },
@@ -1689,7 +1891,10 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
-        "ref": "Daniel 3:16"
+        "ref": "Revelation 14:6-12"
+      },
+      {
+        "ref": "John 3:16"
       },
       {
         "ref": "Acts 4:12"
@@ -1735,6 +1940,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Matthew 24:24"
+      },
+      {
         "ref": "John 8:32"
       },
       {
@@ -1775,6 +1983,9 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "1 Timothy 3:16"
+      },
+      {
         "ref": "John 17:17"
       },
       {
@@ -1812,19 +2023,25 @@ window.VS_MARKING_CATALOG = [
     "transcriptionNote": "Transcribed from photographed marking chart; check source for ambiguous print.",
     "entries": [
       {
+        "ref": "Amos 3:7"
+      },
+      {
+        "ref": "Revelation 13:1-10"
+      },
+      {
         "ref": "Revelation 13:10"
       },
       {
         "ref": "Revelation 13:11"
       },
       {
-        "ref": "Revelation 13:11-12"
+        "ref": "Revelation 13:11,12"
       },
       {
         "ref": "Revelation 13:12"
       },
       {
-        "ref": "Revelation 13:14"
+        "ref": "Revelation 13:13,14"
       },
       {
         "ref": "Revelation 12:17"
