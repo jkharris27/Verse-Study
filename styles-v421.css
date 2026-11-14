@@ -42,3 +42,35 @@ header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);
 .searchoptions .searchoption{padding:7px 0;min-width:0}
 .searchclear{font:inherit;font-size:13px;font-weight:700;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--gold);padding:6px 12px;flex-shrink:0}
 .searchclear:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+
+/* V4.56 — color-coded scripture studies */
+.vs-marked-text{text-decoration-line:underline;text-decoration-color:var(--vs-mark-color,var(--gold));text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-skip-ink:none}
+.vs-study-tool{white-space:normal;text-align:left;max-width:100%;line-height:1.25}
+.vs-study-filter{display:block;width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:inherit;padding:12px;margin:4px 0 12px}
+.vs-study-picker-group{margin:10px 0 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.vs-study-picker-group summary{font-size:14px;font-weight:750;color:var(--cream);padding:13px 12px;cursor:pointer}
+.vs-study-picker-row{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;align-items:center;padding:3px 12px;border-top:1px solid var(--line)}
+.vs-study-picker-row[hidden]{display:none}
+.vs-color-dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex:0 0 12px;box-shadow:0 0 0 1px #ffffff25}
+.vs-study-picker-meta{font-size:12px;color:var(--muted)}
+.vs-personal-row{display:grid;grid-template-columns:36px minmax(0,1fr) 32px 32px;align-items:center;gap:7px;border-bottom:1px solid var(--line)}
+.vs-study-color-input{width:34px;height:34px;padding:2px;background:transparent;border:1px solid var(--line);border-radius:8px}
+.vs-study-popup-head{display:flex;gap:10px;align-items:center;margin:0 0 4px}
+.vs-study-popup-head .vs-color-dot{width:16px;height:16px;flex-basis:16px}
+.vs-study-popup-name{font-size:16px;font-weight:750;color:var(--cream)}
+.vs-study-subtitle{font-size:13px;color:var(--muted);line-height:1.4}
+.vs-study-step{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);font-weight:750;margin-top:14px}
+.vs-study-ref{font-size:21px;color:var(--cream);font-weight:750;margin-top:6px}
+.vs-study-passage{white-space:pre-line;font-size:14px;line-height:1.65;background:var(--panel2);padding:12px;border-radius:10px;margin-top:9px;max-height:180px;overflow-y:auto;overscroll-behavior:contain}
+.vs-study-nav{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+.vs-study-nav button,.vs-study-read,.vs-study-copy{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:9px;padding:11px;cursor:pointer}
+.vs-study-nav button:disabled,.vs-study-read:disabled{opacity:.38;cursor:default}
+.vs-study-read{width:100%;margin-top:9px;color:var(--gold)}
+.vs-study-copy{width:100%;margin-top:13px}
+.vs-study-all{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.vs-study-small-title{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;font-weight:750;margin-bottom:7px}
+.vs-study-list{display:grid;gap:2px;max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+.vs-study-list-row{font:inherit;font-size:13px;text-align:left;padding:9px 10px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text)}
+.vs-study-list-row.active{background:var(--panel2);color:var(--gold);font-weight:800}
+.vs-study-list-row:last-child{border-bottom:0}
