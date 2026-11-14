@@ -40,26 +40,37 @@ function rebuild(){
 function findVerse(book,chapter,verse){
  return (byChapter.get(book+':'+chapter)||[]).filter(x=>x.loc.ranges.some(r=>verse>=r.start&&verse<=r.end));
 }
+function openStudyChooser(hits,x,verse){
+ var unique=[...new Map(hits.map(h=>[h.study.id,h])).values()];
+ var body=document.getElementById('vsInfoBody');body.textContent='';
+ body.appendChild(el('div','vs-study-subtitle','Choose a study containing this verse.'));
+ unique.forEach(function(hit){
+  var b=el('button','vs-study-chooser');
+  var dot=el('span','vs-color-dot');dot.style.background=hit.study.color;
+  var text=el('span','',hit.study.name+' · step '+(hit.index+1)+' of '+hit.study.entries.length);
+  b.type='button';b.append(dot,text);
+  b.onclick=function(){openStudy(hit.study,hit.index)};
+  body.appendChild(b);
+ });
+ api.infoShow('Studies for '+api.refOf({book:x.book,chapter:x.chapter,verse:verse}),'Bible Markings · My Studies');
+}
 function addVerseMarking(row,x,verse){
  if(!api)return;
  var matches=findVerse(Number(x.book),Number(x.chapter),Number(verse));
  if(!matches.length)return;
+ var unique=[...new Map(matches.map(hit=>[hit.study.id,hit])).values()];
  var text=row.querySelector('.verse-text');if(text){
   text.classList.add('vs-marked-text');
-  text.style.setProperty('--vs-mark-color',matches[0].study.color);
-  text.title='Bible marking: '+[...new Set(matches.map(m=>m.study.name))].join(', ');
+  text.style.setProperty('--vs-mark-color',unique[0].study.color);
+  text.title='Bible marking: '+unique.map(m=>m.study.name).join(', ');
  }
  var tools=row.querySelector('.vs-verse-tools');
  if(!tools){tools=el('div','vs-verse-tools');row.appendChild(tools)}
- var seen=new Set();
- matches.forEach(function(hit){
-  if(seen.has(hit.study.id))return;seen.add(hit.study.id);
-  var b=el('button','vs-verse-tool vs-study-tool','▤ '+hit.study.name);
-  b.type='button';b.style.borderLeft='3px solid '+hit.study.color;
-  b.title=hit.study.name+' · step '+(hit.index+1)+' of '+hit.study.entries.length;
-  b.onclick=function(e){e.stopPropagation();openStudy(hit.study,hit.index)};
-  tools.appendChild(b);
- });
+ var b=el('button','vs-verse-tool vs-study-tool',unique.length===1?'▤ '+unique[0].study.name:'▤ Studies ('+unique.length+')');
+ b.type='button';b.style.borderLeft='3px solid '+unique[0].study.color;
+ b.title=unique.map(m=>m.study.name).join(', ');
+ b.onclick=function(e){e.stopPropagation();if(unique.length===1)openStudy(unique[0].study,unique[0].index);else openStudyChooser(unique,x,verse)};
+ tools.appendChild(b);
 }
 function displayEntryText(st,i){
  var ent=st.entries[i];
