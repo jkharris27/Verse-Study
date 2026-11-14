@@ -74,3 +74,7 @@ header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);
 .vs-study-list-row{font:inherit;font-size:13px;text-align:left;padding:9px 10px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text)}
 .vs-study-list-row.active{background:var(--panel2);color:var(--gold);font-weight:800}
 .vs-study-list-row:last-child{border-bottom:0}
+
+.vs-study-editor{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.vs-study-editor button{font:inherit;font-size:12px;font-weight:700;padding:10px 7px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+.vs-study-editor button:disabled{opacity:.35}
