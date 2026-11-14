@@ -21,7 +21,7 @@ function parseRef(value){
  return {book:b.id,chapter:ch,verse:ranges[0].start,ranges:ranges,raw:raw};
 }
 function normalize(st,source){
- var entries=Array.isArray(st.entries)?st.entries.map(x=>({ref:String(x.ref||''),note:String(x.note||''),label:String(x.label||'')})):
+ var entries=Array.isArray(st.entries)?st.entries.map(x=>({ref:String(x.ref||''),note:String(x.note||''),label:String(x.label||''),markChapters:Array.isArray(x.markChapters)?x.markChapters:[]})):
   (Array.isArray(st.verses)?st.verses.map(x=>({ref:api&&api.isValidLocation(x)?api.refOf(x):''})):[]);
  return {id:String(st.id||('user-'+safeName(st.name))),name:safeName(st.name),code:String(st.code||''),source:source||st.source||'user',color:safeColor(st.color),subtitle:String(st.subtitle||''),entries:entries.map(x=>({...x,loc:parseRef(x.ref)})),original:st};
 }
@@ -32,9 +32,19 @@ function rebuild(){
  catalog.push(...api.loadStudies().map((x,i)=>Object.assign(normalize(x,'user'),{userIndex:i})));
  for(var s of catalog)for(var i=0;i<s.entries.length;i++){
   var p=s.entries[i].loc;if(!p)continue;
-  var key=p.book+':'+p.chapter;
-  if(!byChapter.has(key))byChapter.set(key,[]);
-  byChapter.get(key).push({study:s,index:i,loc:p});
+  var chapters=s.entries[i].markChapters;
+  if(Array.isArray(chapters)&&chapters.length){
+   for(var ch of chapters){
+    var chapterNum=Number(ch);if(!Number.isInteger(chapterNum)||chapterNum<1)continue;
+    var chapterKey=p.book+':'+chapterNum;
+    if(!byChapter.has(chapterKey))byChapter.set(chapterKey,[]);
+    byChapter.get(chapterKey).push({study:s,index:i,loc:{book:p.book,chapter:chapterNum,verse:1,ranges:[{start:1,end:999}],raw:p.raw}});
+   }
+  }else{
+   var key=p.book+':'+p.chapter;
+   if(!byChapter.has(key))byChapter.set(key,[]);
+   byChapter.get(key).push({study:s,index:i,loc:p});
+  }
  }
 }
 function findVerse(book,chapter,verse){
@@ -113,7 +123,7 @@ function openStudy(st,index){
  if(st.source!=='user'){
   var copy=el('button','vs-study-copy','Copy to My Studies');
   copy.type='button';copy.onclick=function(){
-   var saved=api.loadStudies(),copied=st.entries.map(x=>({ref:x.ref,note:x.note,label:x.label}));
+   var saved=api.loadStudies(),copied=st.entries.map(x=>({ref:x.ref,note:x.note,label:x.label,markChapters:x.markChapters||[]}));
    var name=prompt('Name your editable copy:',st.name);if(!name||!name.trim())return;
    saved.push({id:'study-'+Date.now(),name:name.trim(),color:st.color,entries:copied});
    api.saveStudies(saved);rebuild();api.render();api.infoClose();
