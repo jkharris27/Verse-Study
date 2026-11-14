@@ -1,4 +1,4 @@
-/* Verse Study V4.56 — color-coded studies, linked passages, and study navigation. */
+/* Verse Study V4.58 — study notes, bookmarked passages, and collapsible study navigation. */
 (function(){
 'use strict';
 var api=null, catalog=[], byChapter=new Map(), popupEpoch=0;
@@ -57,19 +57,33 @@ function openStudyChooser(hits,x,verse){
  unique.forEach(function(hit){
   var b=el('button','vs-study-chooser');
   var dot=el('span','vs-color-dot');dot.style.background=hit.study.color;
-  var text=el('span','',hit.study.name+' · step '+(hit.index+1)+' of '+hit.study.entries.length);
+  var text=el('span','',hit.study.name);
   b.type='button';b.append(dot,text);
   b.onclick=function(){openStudy(hit.study,hit.index)};
   body.appendChild(b);
  });
  api.infoShow('Studies for '+api.refOf({book:x.book,chapter:x.chapter,verse:verse}),'Bible Markings · My Studies');
 }
+function isVerseBookmarked(book,chapter,verse){
+ return api.loadBookmarks().some(function(b){return Number(b.book)===Number(book)&&Number(b.chapter)===Number(chapter)&&Number(b.verse)===Number(verse)});
+}
+function refreshBookmarkMarkings(x){
+ if(!api||!x)return;
+ document.querySelectorAll('.verse-line[data-verse]').forEach(function(row){
+  var v=Number(row.dataset.verse),txt=row.querySelector('.verse-text');
+  if(!txt)return;
+  var marked=findVerse(Number(x.book),Number(x.chapter),v).length>0;
+  txt.classList.toggle('vs-bookmarked-text',!marked&&isVerseBookmarked(x.book,x.chapter,v));
+ });
+}
 function addVerseMarking(row,x,verse){
  if(!api)return;
  var matches=findVerse(Number(x.book),Number(x.chapter),Number(verse));
+ var text=row.querySelector('.verse-text');
+ if(text)text.classList.toggle('vs-bookmarked-text',!matches.length&&isVerseBookmarked(x.book,x.chapter,verse));
  if(!matches.length)return;
  var unique=[...new Map(matches.map(hit=>[hit.study.id,hit])).values()];
- var text=row.querySelector('.verse-text');if(text){
+ if(text){
   text.classList.add('vs-marked-text');
   text.style.setProperty('--vs-mark-color',unique[0].study.color);
   text.title='Bible marking: '+unique.map(m=>m.study.name).join(', ');
@@ -86,6 +100,22 @@ function displayEntryText(st,i){
  var ent=st.entries[i];
  return (ent.label||ent.ref||'Reference needs review');
 }
+function studyEntryNoteKey(st,index){
+ var ent=st.entries[index],ref=String(ent.ref||ent.label||'unlisted');
+ var previous=st.entries.slice(0,index).filter(function(e){return String(e.ref||e.label||'unlisted')===ref}).length;
+ return ref+'#'+previous;
+}
+function loadEntryNote(st,index){
+ var all=api.loadStudyNotes(),notes=all[st.id];
+ return notes&&typeof notes[studyEntryNoteKey(st,index)]==='string'?notes[studyEntryNoteKey(st,index)]:'';
+}
+function saveEntryNote(st,index,value){
+ var all=api.loadStudyNotes(),notes=all[st.id]&&typeof all[st.id]==='object'?all[st.id]:{};
+ var key=studyEntryNoteKey(st,index);
+ if(value)notes[key]=value;else delete notes[key];
+ if(Object.keys(notes).length)all[st.id]=notes;else delete all[st.id];
+ api.saveStudyNotes(all);
+}
 function openStudy(st,index){
  if(!api)return;
  popupEpoch++;
@@ -97,7 +127,6 @@ function openStudy(st,index){
  var title=el('div','vs-study-popup-name',st.name);
  head.append(dot,title);body.appendChild(head);
  if(st.subtitle){body.appendChild(el('div','vs-study-subtitle',st.subtitle))}
- var step=el('div','vs-study-step');
  var ref=el('div','vs-study-ref');
  var verses=el('div','vs-study-passage');
  var nav=el('div','vs-study-nav');
@@ -107,7 +136,17 @@ function openStudy(st,index){
  next.onclick=function(){openStudy(st,index+1)};
  read.onclick=function(){var p=st.entries[index].loc;if(p)api.goTo(p)};
  nav.append(prev,next);
- body.append(step,ref,verses,nav,read);
+ var notes=el('div','vs-study-notes');
+ var notesLabel=el('label','vs-study-notes-label','My notes');
+ var noteInput=el('textarea','vs-study-note-input');
+ noteInput.rows=3;
+ noteInput.placeholder='Add notes for this passage…';
+ noteInput.value=loadEntryNote(st,index);
+ var noteId='vs-study-note-'+Date.now()+'-'+index;
+ noteInput.id=noteId;notesLabel.htmlFor=noteId;
+ noteInput.addEventListener('input',function(){saveEntryNote(st,index,noteInput.value)});
+ notes.append(notesLabel,noteInput);
+ body.append(ref,verses,notes,nav,read);
  read.className='vs-study-read';
  var all=el('div','vs-study-all');
  all.appendChild(el('div','vs-study-small-title','Study sequence'));
@@ -119,17 +158,6 @@ function openStudy(st,index){
   list.appendChild(b);
  });
  all.appendChild(list);body.appendChild(all);
- if(st.source==='markings')body.appendChild(el('div','vs-study-source-review','References transcribed from the photographed marking chart; please check unusual entries against the original.'));
- if(st.source!=='user'){
-  var copy=el('button','vs-study-copy','Copy to My Studies');
-  copy.type='button';copy.onclick=function(){
-   var saved=api.loadStudies(),copied=st.entries.map(x=>({ref:x.ref,note:x.note,label:x.label,markChapters:x.markChapters||[]}));
-   var name=prompt('Name your editable copy:',st.name);if(!name||!name.trim())return;
-   saved.push({id:'study-'+Date.now(),name:name.trim(),color:st.color,entries:copied});
-   api.saveStudies(saved);rebuild();api.render();api.infoClose();
-  };
-  body.appendChild(copy);
- }
  if(st.source==='user'){
   var editor=el('div','vs-study-editor');
   var add=el('button','','+ Add '+api.refOf(api.current()));
@@ -142,7 +170,6 @@ function openStudy(st,index){
   [add,up,down,remove].forEach(b=>{b.type='button';editor.appendChild(b)});body.appendChild(editor);
  }
  var p=st.entries[index].loc;
- step.textContent='Step '+(index+1)+' of '+n;
  ref.textContent=displayEntryText(st,index);
  prev.disabled=index===0;next.disabled=index===n-1;
  read.disabled=!p;
@@ -195,18 +222,20 @@ function renderPicker(){
  var input=el('input','vs-study-filter');input.type='search';input.placeholder='Search studies by title…';input.setAttribute('aria-label','Filter studies');
  box.appendChild(input);
  var marks=catalog.filter(x=>x.source==='markings'),lessons=catalog.filter(x=>x.source==='lessons');
- group(box,'Bible Markings',marks,true);
+ group(box,'Bible Markings',marks,false);
  group(box,'Numbered Bible Studies',lessons,false);
- addTitle(box,'My Studies');
+ var mine=catalog.filter(x=>x.source==='user');
+ var minePanel=el('details','vs-study-picker-group');
+ minePanel.appendChild(el('summary','','My Studies ('+mine.length+')'));
+ box.appendChild(minePanel);
  var newBtn=el('button','save-study-btn','+ New study starting with '+api.refOf(api.current()));
  newBtn.type='button';newBtn.onclick=function(){
   var name=prompt('Name your new study:');if(!name||!name.trim())return;
   savePersonalStudy(name,[api.current()],DEFAULT_COLOR);
- };box.appendChild(newBtn);
- var mine=catalog.filter(x=>x.source==='user');
- if(!mine.length)box.appendChild(el('div','saved-empty','Create a study or select bookmarks below to make one.'));
+ };minePanel.appendChild(newBtn);
+ if(!mine.length)minePanel.appendChild(el('div','saved-empty','Create a study or select bookmarks below to make one.'));
  mine.forEach(function(st,i){
-  var row=el('div','vs-personal-row');
+  var row=el('div','vs-personal-row');row.dataset.name=st.name.toLowerCase();
   var picker=el('input','vs-study-color-input');picker.type='color';picker.value=st.color;picker.title='Change study underline color';picker.setAttribute('aria-label','Change color for '+st.name);
   picker.onchange=function(){
    var saved=api.loadStudies();if(!saved[i])return;saved[i].color=picker.value;api.saveStudies(saved);rebuild();api.render();renderPicker();
@@ -216,11 +245,13 @@ function renderPicker(){
   rename.onclick=function(){var name=prompt('Rename study:',st.name);if(!name||!name.trim())return;var saved=api.loadStudies();if(!saved[i])return;saved[i].name=name.trim();api.saveStudies(saved);rebuild();renderPicker()};
   var del=el('button','saved-delete','×');del.title='Delete study';del.setAttribute('aria-label','Delete '+st.name);
   del.onclick=function(){if(!confirm('Delete study "'+st.name+'"?'))return;var saved=api.loadStudies();saved.splice(i,1);api.saveStudies(saved);rebuild();api.render();renderPicker()};
-  row.append(picker,open,rename,del);box.appendChild(row);
+  row.append(picker,open,rename,del);minePanel.appendChild(row);
  });
- addTitle(box,'Bookmarks');
  var bookmarks=api.loadBookmarks();
- if(!bookmarks.length)box.appendChild(el('div','saved-empty','No bookmarks saved yet.'));
+ var bookmarkPanel=el('details','vs-study-picker-group');
+ bookmarkPanel.appendChild(el('summary','','Bookmarks ('+bookmarks.length+')'));
+ box.appendChild(bookmarkPanel);
+ if(!bookmarks.length)bookmarkPanel.appendChild(el('div','saved-empty','No bookmarks saved yet.'));
  else{
   bookmarks.forEach(function(b,i){
    var row=el('div','saved-row');
@@ -228,19 +259,32 @@ function renderPicker(){
    var link=el('button','saved-link',api.refOf(b));link.onclick=function(){api.goTo(b)};
    var del=el('button','saved-delete','×');del.setAttribute('aria-label','Delete bookmark '+api.refOf(b));
    del.onclick=function(){var saved=api.loadBookmarks();saved.splice(i,1);api.saveBookmarks(saved);api.updateBookmarkUI();renderPicker()};
-   row.append(cb,link,del);box.appendChild(row);
+   row.append(cb,link,del);bookmarkPanel.appendChild(row);
   });
   var save=el('button','save-study-btn','Save selected bookmarks as a study');
   save.onclick=function(){
    var chosen=[...box.querySelectorAll('.study-select:checked')].map(cb=>bookmarks[Number(cb.value)]).filter(Boolean);
    if(!chosen.length)return alert('Select at least one bookmark.');
-   var name=prompt('Name this study:');if(!name||!name.trim())return;
-   savePersonalStudy(name,chosen,DEFAULT_COLOR);
+   var existing=bookmarkPanel.querySelector('.vs-study-create-form');
+   if(existing){existing.remove();return}
+   var form=el('form','vs-study-create-form');
+   var name=el('input','vs-study-name-input');
+   name.type='text';name.placeholder='Study name';name.maxLength=160;name.required=true;name.setAttribute('aria-label','Study name');
+   var colorLabel=el('label','vs-study-color-label','Solid underline color');
+   var color=el('input','vs-study-color-input');color.type='color';color.value=DEFAULT_COLOR;color.setAttribute('aria-label','Choose study color');
+   colorLabel.appendChild(color);
+   var actions=el('div','vs-study-create-actions');
+   var create=el('button','save-study-btn','Create study');create.type='submit';
+   var cancel=el('button','save-study-btn','Cancel');cancel.type='button';cancel.onclick=function(){form.remove()};
+   actions.append(create,cancel);
+   form.append(name,colorLabel,actions);
+   form.addEventListener('submit',function(e){e.preventDefault();var title=name.value.trim();if(!title)return;savePersonalStudy(title,chosen,color.value)});
+   bookmarkPanel.appendChild(form);name.focus();
   };
-  box.appendChild(save);
+  bookmarkPanel.appendChild(save);
  }
  input.oninput=function(){var q=input.value.trim().toLowerCase();box.querySelectorAll('[data-name]').forEach(r=>r.hidden=!!q&&!r.dataset.name.includes(q));if(q)box.querySelectorAll('details.vs-study-picker-group').forEach(d=>d.open=true)};
 }
 function connect(helpers){api=helpers;rebuild()}
-window.VS_STUDIES={connect:connect,rebuild:rebuild,decorateVerse:addVerseMarking,renderPicker:renderPicker,openStudy:openStudy};
+window.VS_STUDIES={connect:connect,rebuild:rebuild,decorateVerse:addVerseMarking,refreshBookmarkMarkings:refreshBookmarkMarkings,renderPicker:renderPicker,openStudy:openStudy};
 })();
