@@ -98,8 +98,152 @@ let greekLexiconPromise=null;
 async function greekLexicon(){if(!greekLexiconPromise)greekLexiconPromise=cachedSourceText('https://raw.githubusercontent.com/morphgnt/strongs-dictionary-xml/master/strongsgreek.xml','verse-study-greek-strongs-v422').then(x=>new DOMParser().parseFromString(x,'application/xml'));return greekLexiconPromise}
 function greekLexEntry(doc,strong){const n=Number(String(strong||'').replace(/^G/i,''));if(!n)return null;const entries=[...doc.getElementsByTagName('entry')],entry=entries.find(e=>Number(e.getAttribute('strongs'))===n);if(!entry)return null;const richText=tag=>{const node=entry.getElementsByTagName(tag)[0];if(!node)return'';let out='';for(const child of node.childNodes){if(child.nodeType===3)out+=child.textContent||'';else if(child.nodeName==='greek')out+=child.getAttribute('unicode')||'';else if(child.nodeName==='strongsref'){const rn=Number(child.getAttribute('strongs')),lang=child.getAttribute('language'),root=lang==='GREEK'?entries.find(e=>Number(e.getAttribute('strongs'))===rn):null,greek=root?.getElementsByTagName('greek')[0]?.getAttribute('unicode')||'';out+=lang==='GREEK'?(greek?greek+' (G'+rn+')':'G'+rn):'H'+rn}else out+=child.textContent||''}return cleanLexText(out).replace(/^--/,'').trim()};return{definition:richText('strongs_def'),derivation:richText('strongs_derivation'),usage:richText('kjv_def')}}
 function hebrewLexEntry(entry){if(!entry)return{definition:'',derivation:'',usage:''};const text=tag=>cleanLexText(entry.getElementsByTagNameNS('*',tag)[0]?.textContent||entry.getElementsByTagName(tag)[0]?.textContent||'');return{definition:text('meaning'),derivation:text('source'),usage:text('usage')}}
-function wordStudyHtml({original,lemma,strong,grammar,verseWord,meaning,root,deeper,rtl=false}){const showLemma=lemma&&normEnglish(lemma)!==normEnglish(original);return `<div class="wordrow"><div><span class="originalword"${rtl?' dir="rtl"':''}>${esc(original)}</span><span class="wordmeta">${esc(strong)} · ${esc(grammar)}</span></div>${showLemma?`<div class="wordgrammar"><b>Lemma:</b> ${esc(lemma)}</div>`:''}<div class="wordmeaning"><b>${esc(settings.precise)} word/phrase:</b> ${esc(verseWord||'—')}</div><div class="wordmeaning"><b>Meaning:</b> ${esc(meaning||'Definition unavailable')}</div><div class="wordgrammar"><b>Root / etymology:</b> ${esc(root||'No root information listed in the lexicon.')}</div><div class="wordgrammar"><b>Deeper meaning:</b> ${esc(deeper||meaning||'No additional lexical detail listed.')}</div></div>`}
-async function loadWordStudy(x){const el=$('wordStudy'),title=$('wordStudyTitle');if(!el)return;const isNT=x.book>=40;title.textContent=isNT?'Word Study · Greek':'Word Study · Hebrew';el.textContent=`Loading ${isNT?'Greek':'Hebrew'} word study…`;try{if(isNT){const code=STEP_GREEK_BOOKS[x.book],r=await fetch(`https://raw.githubusercontent.com/metaxiamultimedia/scriptures-js-source-stepbible-tagnt-tr/main/data/stepbible-tagnt-tr/${code}/${x.chapter}/${x.verse}.json`,{cache:'force-cache'});if(!r.ok)throw new Error();const [d,lex]=await Promise.all([r.json(),greekLexicon()]),arr=(d.words||[]).filter(w=>w.strongs).sort((a,b)=>wordScore(b)-wordScore(a)),chosen=[],seen=new Set();for(const w of arr){const strong=cleanStrong(w);if(wordScore(w)<1||!strong||seen.has(strong))continue;seen.add(strong);chosen.push(w);if(chosen.length===5)break}el.innerHTML=chosen.map(w=>{const basic=cleanLexText(w.metadata?.gloss||w.metadata?.subMeaning||w.translation||''),context=cleanLexText(w.translation||''),lemma=w.lemma||w.text||'',original=cleanLexText(w.text||lemma),strong=cleanStrong(w),grammar=morphExplanation(w.morph),verseWord=preciseVerseWord([context,basic]),lexEntry=greekLexEntry(lex,strong)||{},meaning=lexEntry.definition||basic||context,range=lexEntry.usage&&normEnglish(lexEntry.usage)!==normEnglish(meaning)&&lexEntry.usage.split(/[,;]/).length>1?'Other renderings: '+lexEntry.usage:'',inVerse=context&&normEnglish(context)!==normEnglish(meaning)?'In this verse: '+context:'',deeper=[inVerse,range].filter(Boolean).join(' · ')||basic||context;return wordStudyHtml({original,lemma,strong,grammar,verseWord,meaning,root:lexEntry.derivation,deeper})}).join('')||'<div class="small">No key lexical entries found.</div>'}else{const code=OSHB_BOOKS[x.book],xml=await cachedSourceText(`https://raw.githubusercontent.com/openscriptures/morphhb/master/wlc/${code}.xml`,'verse-study-hebrew-books-v420'),doc=new DOMParser().parseFromString(xml,'application/xml'),verse=[...doc.getElementsByTagNameNS('*','verse')].find(v=>v.getAttribute('osisID')===`${code}.${x.chapter}.${x.verse}`);if(!verse)throw new Error();const lexText=await cachedSourceText('https://raw.githubusercontent.com/openscriptures/HebrewLexicon/master/HebrewStrong.xml','verse-study-hebrew-lexicon-v420'),lexDoc=new DOMParser().parseFromString(lexText,'application/xml'),entries=new Map([...lexDoc.getElementsByTagNameNS('*','entry')].map(e=>[e.getAttribute('id'),e])),arr=[...verse.getElementsByTagNameNS('*','w')].map(w=>({text:(w.textContent||'').replaceAll('/',''),lemma:w.getAttribute('lemma')||'',morph:w.getAttribute('morph')||''})),chosen=[],seen=new Set();for(const w of arr){const strong=hebrewStrong(w.lemma);if(!strong||seen.has(strong))continue;seen.add(strong);const entry=entries.get(strong),lexEntry=hebrewLexEntry(entry);chosen.push({...w,strong,...lexEntry})}el.innerHTML=chosen.map(w=>{const verseWord=preciseVerseWord((w.usage||w.definition||'').split(/[,;()]/).map(s=>cleanLexText(s)).filter(Boolean));return wordStudyHtml({original:w.text,strong:w.strong,grammar:hebrewGrammar(w.morph),verseWord,meaning:w.definition||w.usage,root:w.derivation,deeper:w.usage||w.definition,rtl:true})}).join('')||'<div class="small">No key lexical entries found.</div>'}}catch{el.innerHTML='<div class="small">Original-language word study could not load. The verse translations are unaffected.</div>'}}
+
+/* V4.59: source-order word study without the five-word cap or Strong's deduplication. */
+function wordStudyMatch(gloss){
+ const source=String(gloss||'').replace(/\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g,' ').replace(/[“”‘’]/g,' ');
+ const sourceWords=source.match(/[\p{L}\p{N}'-]+/gu)||[];
+ const verseWords=String(currentPreciseText||'').match(/[\p{L}\p{N}'-]+/gu)||[];
+ if(!sourceWords.length||!verseWords.length)return '';
+ const stop=new Set(['a','an','the','of','to','for','and','or','in','on','by','as','is','was','be','he','she','it','they','them','him','her','his','its','that','this','with']);
+ const sourceNorm=sourceWords.map(normEnglish),verseNorm=verseWords.map(normEnglish);
+ for(let n=Math.min(5,sourceWords.length);n>=1;n--){
+  for(let start=0;start+n<=sourceWords.length;start++){
+   const phrase=sourceNorm.slice(start,start+n);
+   if(n===1&&(stop.has(phrase[0])||phrase[0].length<3))continue;
+   for(let i=0;i+n<=verseWords.length;i++){
+    if(phrase.every((token,j)=>token===verseNorm[i+j]))return verseWords.slice(i,i+n).join(' ');
+   }
+  }
+ }
+ return '';
+}
+function wordStudyGreekImportant(w){
+ const m=String(w.morph||'').replace(/^robinson:/i,'').toUpperCase();
+ if(/^T-/.test(m))return false;
+ if(/^(CONJ|PRT|INJ|HEB)/.test(m)){
+  const gloss=normEnglish(w.translation||w.metadata?.gloss||'');
+  const strong=cleanStrong(w);
+  return /^(not|never|no|if|unless|because|since|therefore|so that|so as|but|however|although|lest|rather|neither|nor|for this reason)\b/.test(gloss)||/^(G1063|G1487|G2443|G3361|G3756|G3761|G3762)$/i.test(strong);
+ }
+ return true;
+}
+function wordStudyHebrewImportant(w){
+ const parts=String(w.morph||'').replace(/^H/,'').split('/').filter(Boolean);
+ const root=parts.filter(s=>!/^S[pfc]/.test(s)).slice(-1)[0]||'';
+ if(/^[NVARPD]/.test(root))return true;
+ return /^(H3588|H3808|H369|H518|H176|H637|H1115)$/i.test(w.strong||'');
+}
+function wordStudyHebrewGrammar(morph){
+ const parts=String(morph||'').replace(/^H/,'').split('/').filter(Boolean);
+ const core=parts.filter(s=>!/^S[pfc]/.test(s)).slice(-1)[0]||'';
+ const kinds={N:'noun',V:'verb',A:'adjective',P:'pronoun',R:'preposition',C:'conjunction',D:'adverb',T:'particle'};
+ const base=kinds[core[0]]||'Hebrew word';
+ const elements=parts.slice(0,-1).map(s=>({C:'conjunction',R:'preposition',T:'article'}[s[0]]||'attached element'));
+ const suffix=parts.some(s=>/^S[pfc]/.test(s));
+ return base+(elements.length?' · '+elements.join(' + '):'')+(suffix?' · suffix':'');
+}
+const wordStudyGreekIndex=new WeakMap();
+function wordStudyIndexedGreekLex(doc,strong){
+ const number=Number(String(strong||'').replace(/^G/i,''));if(!number)return null;
+ let byNumber=wordStudyGreekIndex.get(doc);
+ if(!byNumber){
+  byNumber=new Map();
+  for(const entry of doc.getElementsByTagName('entry'))byNumber.set(Number(entry.getAttribute('strongs')),entry);
+  wordStudyGreekIndex.set(doc,byNumber);
+ }
+ const entry=byNumber.get(number);if(!entry)return null;
+ function content(tag){
+  const node=entry.getElementsByTagName(tag)[0];if(!node)return '';
+  let out='';
+  for(const child of node.childNodes){
+   if(child.nodeType===3)out+=child.textContent||'';
+   else if(child.nodeName==='greek')out+=child.getAttribute('unicode')||'';
+   else if(child.nodeName==='strongsref'){
+    const n=Number(child.getAttribute('strongs')),lang=child.getAttribute('language');
+    const root=lang==='GREEK'?byNumber.get(n):null;
+    const greek=root?.getElementsByTagName('greek')[0]?.getAttribute('unicode')||'';
+    out+=lang==='GREEK'?(greek?greek+' (G'+n+')':'G'+n):'H'+n;
+   }else out+=child.textContent||'';
+  }
+  return cleanLexText(out).replace(/^--/,'');
+ }
+ return {definition:content('strongs_def'),derivation:content('strongs_derivation'),usage:content('kjv_def')};
+}
+function wordStudyHtml(o){
+ const original=o.original||'',lemma=o.lemma||'',strong=o.strong||'',grammar=o.grammar||'',verseWord=o.verseWord||'',gloss=o.gloss||'',meaning=o.meaning||'',root=o.root||'',deeper=o.deeper||'',rtl=!!o.rtl,parts=o.parts||'',secondary=!!o.secondary;
+ const hasLemma=lemma&&normEnglish(lemma)!==normEnglish(original);
+ return '<div class="wordrow'+(secondary?' vs-word-secondary':'')+'"'+(secondary?' hidden':'')+'>'
+  +'<div><span class="originalword"'+(rtl?' dir="rtl"':'')+'>'+esc(original)+'</span><span class="wordmeta">'+esc([strong,grammar].filter(Boolean).join(' · '))+'</span></div>'
+  +(hasLemma?'<div class="wordgrammar"><b>Lemma:</b> '+esc(lemma)+'</div>':'')
+  +(parts?'<div class="wordgrammar"><b>Hebrew word parts:</b> '+esc(parts)+'</div>':'')
+  +(verseWord?'<div class="wordmeaning"><b>'+esc(settings.precise)+' word/phrase:</b> '+esc(verseWord)+'</div>':'')
+  +(gloss?'<div class="wordmeaning"><b>Original-language source gloss:</b> '+esc(gloss)+'</div>':'')
+  +'<div class="wordmeaning"><b>Meaning:</b> '+esc(meaning||'Definition unavailable')+'</div>'
+  +'<div class="wordgrammar"><b>Root / etymology:</b> '+esc(root||'No root information listed in the lexicon.')+'</div>'
+  +'<div class="wordgrammar"><b>Deeper meaning:</b> '+esc(deeper||meaning||'No additional lexical detail listed.')+'</div></div>';
+}
+function wordStudyRender(el,items){
+ if(!items.length){el.innerHTML='<div class="small">No original-language words found for this verse.</div>';return}
+ const allSecondary=items.every(w=>!w.important);
+ const extra=allSecondary?0:items.filter(w=>!w.important).length;
+ const keyCount=items.length-extra;
+ el.innerHTML='<div class="small" style="margin:7px 0 8px">Showing '+keyCount+' significant word'+(keyCount===1?'':'s')+' in verse order'+(extra?' · '+items.length+' words total':'')+'.</div>'
+  +items.map(w=>wordStudyHtml({...w,secondary:extra>0&&!w.important})).join('');
+ if(extra){
+  const button=document.createElement('button');
+  button.type='button';button.className='vs-verse-tool';
+  button.style.margin='2px 0 8px';button.textContent='Show every word ('+extra+' more)';
+  button.setAttribute('aria-expanded','false');
+  button.onclick=()=>{
+   const show=button.getAttribute('aria-expanded')!=='true';
+   button.setAttribute('aria-expanded',String(show));
+   button.textContent=show?'Show significant words only':'Show every word ('+extra+' more)';
+   el.querySelectorAll('.vs-word-secondary').forEach(row=>{row.hidden=!show});
+  };
+  el.insertBefore(button,el.querySelector('.wordrow'));
+ }
+}
+async function loadWordStudy(x){
+ const el=$('wordStudy'),title=$('wordStudyTitle');if(!el||!title)return;
+ const isNT=x.book>=40;title.textContent=isNT?'Word Study · Greek':'Word Study · Hebrew';
+ el.textContent='Loading '+(isNT?'Greek':'Hebrew')+' word study…';
+ function stillCurrent(){return current.book===x.book&&current.chapter===x.chapter&&current.verse===x.verse&&document.getElementById('wordStudy')===el}
+ try{
+  if(isNT){
+   const code=STEP_GREEK_BOOKS[x.book];
+   const response=await fetch('https://raw.githubusercontent.com/metaxiamultimedia/scriptures-js-source-stepbible-tagnt-tr/main/data/stepbible-tagnt-tr/'+code+'/'+x.chapter+'/'+x.verse+'.json',{cache:'force-cache'});
+   if(!response.ok)throw new Error('Greek source unavailable');
+   const [data,lex]=await Promise.all([response.json(),greekLexicon()]);
+   if(!stillCurrent())return;
+   const rows=(data.words||[]).map((w,i)=>({w,i})).filter(x=>x.w&&x.w.text).sort((a,b)=>(Number(a.w.position)||a.i+1)-(Number(b.w.position)||b.i+1));
+   const items=rows.map(({w})=>{
+    const strong=cleanStrong(w),basic=cleanLexText(w.metadata?.gloss||w.metadata?.subMeaning||w.translation||''),context=cleanLexText(w.translation||''),original=cleanLexText(w.text||''),lemma=typeof w.lemma==='string'&&/[\u0370-\u03ff\u1f00-\u1fff]/u.test(w.lemma)?w.lemma:'',lexEntry=wordStudyIndexedGreekLex(lex,strong)||{};
+    const meaning=lexEntry.definition||basic||context;
+    const other=lexEntry.usage&&normEnglish(lexEntry.usage)!==normEnglish(meaning)&&lexEntry.usage.split(/[,;]/).length>1?'Other renderings: '+lexEntry.usage:'';
+    return {original,lemma,strong,grammar:morphExplanation(w.morph),verseWord:wordStudyMatch(context||basic),gloss:context||basic,meaning,root:lexEntry.derivation,deeper:other||basic||meaning,important:wordStudyGreekImportant(w)};
+   });
+   wordStudyRender(el,items);
+  }else{
+   const code=OSHB_BOOKS[x.book];
+   const xml=await cachedSourceText('https://raw.githubusercontent.com/openscriptures/morphhb/master/wlc/'+code+'.xml','verse-study-hebrew-books-v420');
+   const doc=new DOMParser().parseFromString(xml,'application/xml');
+   const verse=[...doc.getElementsByTagNameNS('*','verse')].find(v=>v.getAttribute('osisID')===code+'.'+x.chapter+'.'+x.verse);
+   if(!verse)throw new Error('Hebrew verse unavailable');
+   const lexText=await cachedSourceText('https://raw.githubusercontent.com/openscriptures/HebrewLexicon/master/HebrewStrong.xml','verse-study-hebrew-lexicon-v420');
+   const lexDoc=new DOMParser().parseFromString(lexText,'application/xml');
+   if(!stillCurrent())return;
+   const entries=new Map([...lexDoc.getElementsByTagNameNS('*','entry')].map(e=>[e.getAttribute('id'),e]));
+   const items=[...verse.getElementsByTagNameNS('*','w')].map(node=>{
+    const raw=node.textContent||'',lemma=node.getAttribute('lemma')||'',morph=node.getAttribute('morph')||'',strong=hebrewStrong(lemma),lexEntry=hebrewLexEntry(entries.get(strong));
+    const uses=cleanLexText(lexEntry.usage||'');
+    const cleanParts=raw.split('/').map(s=>s.trim()).filter(Boolean);
+    return {original:raw.replaceAll('/',''),strong,grammar:wordStudyHebrewGrammar(morph),parts:cleanParts.length>1?cleanParts.join(' / '):'',verseWord:wordStudyMatch(uses.split(/[,;]/).slice(0,3).join(' ')),gloss:'',meaning:lexEntry.definition||uses,root:lexEntry.derivation,deeper:uses||lexEntry.definition,rtl:true,important:wordStudyHebrewImportant({morph,strong})};
+   });
+   wordStudyRender(el,items);
+  }
+ }catch(e){if(stillCurrent())el.innerHTML='<div class="small">Original-language word study could not load. The verse translations are unaffected.</div>'}
+}
 function loadBookmarks(){try{const a=JSON.parse(SAFE_STORAGE.getItem('verseStudy.bookmarks')||'[]');return Array.isArray(a)?a.filter(validLocation):[]}catch{return[]}}
 function saveBookmarks(a){SAFE_STORAGE.setItem('verseStudy.bookmarks',JSON.stringify(a))}
 function loadStudies(){try{const a=JSON.parse(SAFE_STORAGE.getItem('verseStudy.studies')||'[]');return Array.isArray(a)?a:[]}catch{return[]}}
