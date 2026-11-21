@@ -139,7 +139,8 @@ function wordStudyHebrewGrammar(morph){
  const core=parts.filter(s=>!/^S[pfc]/.test(s)).slice(-1)[0]||'';
  const kinds={N:'noun',V:'verb',A:'adjective',P:'pronoun',R:'preposition',C:'conjunction',D:'adverb',T:'particle'};
  const base=kinds[core[0]]||'Hebrew word';
- const elements=parts.slice(0,-1).map(s=>({C:'conjunction',R:'preposition',T:'article'}[s[0]]||'attached element'));
+ const coreIndex=parts.findLastIndex(s=>!/^S[pfc]/.test(s));
+ const elements=parts.slice(0,coreIndex).map(s=>({C:'conjunction',R:'preposition',T:'article'}[s[0]]||'attached element'));
  const suffix=parts.some(s=>/^S[pfc]/.test(s));
  return base+(elements.length?' · '+elements.join(' + '):'')+(suffix?' · suffix':'');
 }
