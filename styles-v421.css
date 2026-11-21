@@ -115,3 +115,7 @@ header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);
 .vs-word-focus-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 
 .wordstudy{scroll-margin-top:88px}
+
+/* V4.63: scroll-sync must be instant; active-verse highlighting must not shift text. */
+.translation-scroll{scroll-behavior:auto!important}
+.translation-scroll .current-verse{padding:6px 0;margin:0;background:var(--panel2);box-shadow:inset 3px 0 var(--gold)}
