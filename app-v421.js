@@ -184,44 +184,37 @@ function wordStudyHtml(o){
   +'<div class="wordgrammar"><b>Root / etymology:</b> '+esc(root||'No root information listed in the lexicon.')+'</div>'
   +'<div class="wordgrammar"><b>Deeper meaning:</b> '+esc(deeper||meaning||'No additional lexical detail listed.')+'</div></div>';
 }
-function wordStudyKeyScore(w,index,items){
- const grammar=String(w.grammar||'').toLowerCase(),gloss=normEnglish(w.gloss||w.verseWord||'');
- let score=0;
- if(/\bverb\b/.test(grammar))score+=11;
- else if(/\bnoun\b/.test(grammar))score+=11;
- else if(/\badjective\b/.test(grammar))score+=9;
- else if(/\badverb\b/.test(grammar))score+=6;
- else if(/\bpronoun\b/.test(grammar))score+=3;
- else if(/\bpreposition\b/.test(grammar))score+=2;
- else if(/\barticle\b/.test(grammar))score+=0;
- else if(/\bconjunction\b/.test(grammar))score+=1;
- else score+=4;
- if(w.important)score+=2;
- if(/^(not|no|never|without|unless|if|because|therefore|lest|but)\b/.test(gloss))score+=5;
- if(w.verseWord)score+=2;
- if(w.strong&&items.slice(0,index).some(p=>p.strong===w.strong))score-=5;
- if(/\b(article|conjunction)\b/.test(grammar)&&!(/^(not|no|never|without|unless|if|because|therefore|lest|but)\b/.test(gloss)))score-=4;
- return score;
+/* V4.61: choose key words by meaning, not a fixed count; longer passages naturally have more. */
+function wordStudyIsKey(w){
+ const grammar=String(w.grammar||'').toLowerCase().split(/\s*·\s*/)[0].trim();
+ const gloss=normEnglish(w.gloss||w.verseWord||'');
+ const strong=String(w.strong||'').toUpperCase();
+ /* Negation, contrast, condition, and purpose can change the meaning of a whole verse. */
+ if(/^(not|no|never|without|unless|if|because|therefore|lest|but|however|although|only|all|every|each|whoever|whosoever|nothing|neither|nor|rather|instead|even though|so that|in order to|whether|until|except)\b/.test(gloss))return true;
+ if(/^(G3756|G3361|G1487|H3808|H369|H518)$/.test(strong))return true;
+ /* Content words carry the central meaning; no quota is imposed. */
+ if(/^(noun|verb|adjective|demonstrative)\b/.test(grammar))return true;
+ if(/^adverb\b/.test(grammar))return !/^(now|then|also|there|here|again|indeed|thus|very|just)\b/.test(gloss);
+ /* Most grammatical connectives and ordinary pronouns remain available on expansion. */
+ if(/^(pronoun|relative pronoun)\b/.test(grammar))return /^(whoever|whomever|everyone|anyone|everybody|nobody|no one|nothing|all|each|myself|yourself|himself|herself|ourselves|themselves)\b/.test(gloss);
+ if(/^preposition\b/.test(grammar))return /^(without|against|instead of|on behalf of|because of|according to|through)\b/.test(gloss);
+ if(/^conjunction\b/.test(grammar))return /^(if|because|unless|but|however|although|so that|in order that|therefore|lest)\b/.test(gloss);
+ /* Keep unclassified but substantive entries visible rather than silently dropping them. */
+ if(!grammar||grammar==='hebrew word'||grammar==='word')return !!w.strong&&!/^(and|the|a|an|of|to|in|on|with|for|or|from|by|he|she|it)\b/.test(gloss);
+ return false;
 }
 function wordStudyRender(el,items){
  if(!items.length){el.innerHTML='<div class="small">No original-language words found for this verse.</div>';return}
- /* Select across the entire verse first, then restore original order for reading. */
- const limit=Math.min(items.length,items.length>=19?7:6);
- const ranked=items.map((w,i)=>({i,score:wordStudyKeyScore(w,i,items)}));
- const chosen=new Set(),usedZones=new Set();
- while(chosen.size<limit){
-  const remaining=ranked.filter(r=>!chosen.has(r.i));
-  if(!remaining.length)break;
-  remaining.sort((a,b)=>{
-   const zoneA=Math.floor(a.i*3/items.length),zoneB=Math.floor(b.i*3/items.length);
-   const bonusA=usedZones.has(zoneA)?0:3,bonusB=usedZones.has(zoneB)?0:3;
-   return (b.score+bonusB)-(a.score+bonusA)||a.i-b.i;
-  });
-  const winner=remaining[0];chosen.add(winner.i);usedZones.add(Math.floor(winner.i*3/items.length));
+ const chosen=items.map(wordStudyIsKey);
+ if(!chosen.some(Boolean)){
+  const candidates=items.map((w,i)=>({w,i})).filter(({w})=>w.strong&&!/^(article|conjunction|preposition|particle)\b/i.test(String(w.grammar||'')));
+  if(candidates.length)candidates.forEach(({i})=>{chosen[i]=true});
+  else items.forEach((w,i)=>{chosen[i]=!!w.strong});
+  if(!chosen.some(Boolean))chosen[0]=true;
  }
- const extra=items.length-chosen.size;
- el.innerHTML='<div class="small" style="margin:7px 0 8px">Key words in verse order ('+chosen.size+')</div>'
-  +items.map((w,i)=>wordStudyHtml({...w,secondary:!chosen.has(i)})).join('');
+ const shown=chosen.filter(Boolean).length,extra=items.length-shown;
+ el.innerHTML='<div class="small" style="margin:7px 0 8px">Key words in verse order ('+shown+')</div>'
+  +items.map((w,i)=>wordStudyHtml({...w,secondary:!chosen[i]})).join('');
  if(extra){
   const button=document.createElement('button');
   button.type='button';button.className='vs-verse-tool';
