@@ -17,7 +17,7 @@ function syncSettingsUI(){normalizeSettings();buildVersionSelect('preciseVersion
 ['showHenry','showSda','showAi'].forEach((id,i)=>$(id).onchange=e=>{settings[['showHenry','showSda','showAi'][i]]=e.target.checked;saveSettings();render()});
 $('resetSettings').onclick=()=>{settings={...DEFAULT_SETTINGS};saveSettings();syncSettingsUI();render()};
 let current={book:43,chapter:8,verse:1}, currentPreciseText='', translationToken=0, pickerBook=null,pickerChapter=null,pickerTestament='NT';
-let wordStudyTap=null,wordStudyFocusedIndex=null,wordStudyMode='key',wordStudyLoaded=null;
+let wordStudyTap=null,wordStudyFocusedIndex=null,wordStudyMode='key',wordStudyLoaded=null,wordStudyScrollPending=false;
 function validLocation(x){const b=bookById(x?.book);return !!(b&&Number(x.chapter)>=1&&Number(x.chapter)<=b.chapters&&Number(x.verse)>=1)}
 function loadLocation(k){try{const x=JSON.parse(SAFE_STORAGE.getItem(k)||'null');return validLocation(x)?x:null}catch{return null}}
 const last=loadLocation('verseStudy.lastLocation');if(last)current=last;
@@ -272,7 +272,7 @@ function wordStudyMarkTappedWords(){
 }
 function wordStudyTapEnglish(x,index,word){
  wordStudyTap={book:Number(x.book),chapter:Number(x.chapter),verse:Number(x.verse),index,word};
- wordStudyFocusedIndex=null;wordStudyMode='focus';
+ wordStudyFocusedIndex=null;wordStudyMode='focus';wordStudyScrollPending=true;
  const isCurrent=wordStudyLocationKey(x)===wordStudyLocationKey(current);
  if(!isCurrent){goTo(x,true);return}
  wordStudyMarkTappedWords();
@@ -335,6 +335,10 @@ function wordStudyRenderFocus(el,items){
  const back=document.createElement('button');back.type='button';back.className='vs-verse-tool';back.textContent='Return to key words';
  back.onclick=()=>{wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key';wordStudyMarkTappedWords();wordStudyRender(el,items)};
  actions.appendChild(back);
+ if(wordStudyScrollPending){
+  wordStudyScrollPending=false;
+  requestAnimationFrame(()=>el.closest('.wordstudy')?.scrollIntoView({behavior:'smooth',block:'start'}));
+ }
 }
 function wordStudyRenderAll(el,items){
  el.innerHTML='<div class="small" style="margin:7px 0 8px">All original-language words in verse order ('+items.length+')</div>'
@@ -393,7 +397,7 @@ async function loadWordStudy(x){
     const strong=cleanStrong(w),basic=cleanLexText(w.metadata?.gloss||w.metadata?.subMeaning||w.translation||''),context=cleanLexText(w.translation||''),original=cleanLexText(w.text||''),lemma=typeof w.lemma==='string'&&/[\u0370-\u03ff\u1f00-\u1fff]/u.test(w.lemma)?w.lemma:'',lexEntry=wordStudyIndexedGreekLex(lex,strong)||{};
     const meaning=lexEntry.definition||basic||context;
     const other=lexEntry.usage&&normEnglish(lexEntry.usage)!==normEnglish(meaning)&&lexEntry.usage.split(/[,;]/).length>1?'Other renderings: '+lexEntry.usage:'';
-    return {original,lemma,strong,grammar:morphExplanation(w.morph),verseWord:wordStudyMatch(context||basic),gloss:context||basic,meaning,root:lexEntry.derivation,deeper:other||basic||meaning,alignGloss:context||basic,gloss:context||basic,important:wordStudyGreekImportant(w)};
+    return {original,lemma,strong,grammar:morphExplanation(w.morph),verseWord:wordStudyMatch(context||basic),gloss:context||basic,meaning,root:lexEntry.derivation,deeper:other||basic||meaning,alignGloss:context||basic,important:wordStudyGreekImportant(w)};
    });
    wordStudyRender(el,items);
   }else{
