@@ -184,13 +184,44 @@ function wordStudyHtml(o){
   +'<div class="wordgrammar"><b>Root / etymology:</b> '+esc(root||'No root information listed in the lexicon.')+'</div>'
   +'<div class="wordgrammar"><b>Deeper meaning:</b> '+esc(deeper||meaning||'No additional lexical detail listed.')+'</div></div>';
 }
+function wordStudyKeyScore(w,index,items){
+ const grammar=String(w.grammar||'').toLowerCase(),gloss=normEnglish(w.gloss||w.verseWord||'');
+ let score=0;
+ if(/\bverb\b/.test(grammar))score+=11;
+ else if(/\bnoun\b/.test(grammar))score+=11;
+ else if(/\badjective\b/.test(grammar))score+=9;
+ else if(/\badverb\b/.test(grammar))score+=6;
+ else if(/\bpronoun\b/.test(grammar))score+=3;
+ else if(/\bpreposition\b/.test(grammar))score+=2;
+ else if(/\barticle\b/.test(grammar))score+=0;
+ else if(/\bconjunction\b/.test(grammar))score+=1;
+ else score+=4;
+ if(w.important)score+=2;
+ if(/^(not|no|never|without|unless|if|because|therefore|lest|but)\b/.test(gloss))score+=5;
+ if(w.verseWord)score+=2;
+ if(w.strong&&items.slice(0,index).some(p=>p.strong===w.strong))score-=5;
+ if(/\b(article|conjunction)\b/.test(grammar)&&!(/^(not|no|never|without|unless|if|because|therefore|lest|but)\b/.test(gloss)))score-=4;
+ return score;
+}
 function wordStudyRender(el,items){
  if(!items.length){el.innerHTML='<div class="small">No original-language words found for this verse.</div>';return}
- const allSecondary=items.every(w=>!w.important);
- const extra=allSecondary?0:items.filter(w=>!w.important).length;
- const keyCount=items.length-extra;
- el.innerHTML='<div class="small" style="margin:7px 0 8px">Showing '+keyCount+' significant word'+(keyCount===1?'':'s')+' in verse order'+(extra?' · '+items.length+' words total':'')+'.</div>'
-  +items.map(w=>wordStudyHtml({...w,secondary:extra>0&&!w.important})).join('');
+ /* Select across the entire verse first, then restore original order for reading. */
+ const limit=Math.min(items.length,items.length>=19?7:6);
+ const ranked=items.map((w,i)=>({i,score:wordStudyKeyScore(w,i,items)}));
+ const chosen=new Set(),usedZones=new Set();
+ while(chosen.size<limit){
+  const remaining=ranked.filter(r=>!chosen.has(r.i));
+  if(!remaining.length)break;
+  remaining.sort((a,b)=>{
+   const zoneA=Math.floor(a.i*3/items.length),zoneB=Math.floor(b.i*3/items.length);
+   const bonusA=usedZones.has(zoneA)?0:3,bonusB=usedZones.has(zoneB)?0:3;
+   return (b.score+bonusB)-(a.score+bonusA)||a.i-b.i;
+  });
+  const winner=remaining[0];chosen.add(winner.i);usedZones.add(Math.floor(winner.i*3/items.length));
+ }
+ const extra=items.length-chosen.size;
+ el.innerHTML='<div class="small" style="margin:7px 0 8px">Key words in verse order ('+chosen.size+')</div>'
+  +items.map((w,i)=>wordStudyHtml({...w,secondary:!chosen.has(i)})).join('');
  if(extra){
   const button=document.createElement('button');
   button.type='button';button.className='vs-verse-tool';
@@ -199,7 +230,7 @@ function wordStudyRender(el,items){
   button.onclick=()=>{
    const show=button.getAttribute('aria-expanded')!=='true';
    button.setAttribute('aria-expanded',String(show));
-   button.textContent=show?'Show significant words only':'Show every word ('+extra+' more)';
+   button.textContent=show?'Show key words only':'Show every word ('+extra+' more)';
    el.querySelectorAll('.vs-word-secondary').forEach(row=>{row.hidden=!show});
   };
   el.insertBefore(button,el.querySelector('.wordrow'));
