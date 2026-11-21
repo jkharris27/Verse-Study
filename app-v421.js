@@ -17,6 +17,7 @@ function syncSettingsUI(){normalizeSettings();buildVersionSelect('preciseVersion
 ['showHenry','showSda','showAi'].forEach((id,i)=>$(id).onchange=e=>{settings[['showHenry','showSda','showAi'][i]]=e.target.checked;saveSettings();render()});
 $('resetSettings').onclick=()=>{settings={...DEFAULT_SETTINGS};saveSettings();syncSettingsUI();render()};
 let current={book:43,chapter:8,verse:1}, currentPreciseText='', translationToken=0, pickerBook=null,pickerChapter=null,pickerTestament='NT';
+let wordStudyTap=null,wordStudyFocusedIndex=null,wordStudyMode='key',wordStudyLoaded=null;
 function validLocation(x){const b=bookById(x?.book);return !!(b&&Number(x.chapter)>=1&&Number(x.chapter)<=b.chapters&&Number(x.verse)>=1)}
 function loadLocation(k){try{const x=JSON.parse(SAFE_STORAGE.getItem(k)||'null');return validLocation(x)?x:null}catch{return null}}
 const last=loadLocation('verseStudy.lastLocation');if(last)current=last;
@@ -72,8 +73,8 @@ function chapterRows(data){return Array.isArray(data)?data:Array.isArray(data?.v
 const topicSectionCache=new Map();let activeTopicSection=null;
 function fallbackVerseWindow(x,rows){const verses=rows.map(r=>Number(r.verse)).filter(Boolean),last=Math.max(...verses),start=Math.min(Number(x.verse),Math.max(1,last-4)),end=Math.min(last,start+4);return{start,end,title:'',prevStart:start>1?Math.max(1,start-5):null,nextStart:end<last?end+1:null,fallback:true}}
 async function getTopicSection(x,rows){const code=BOOK_IDS[x.book-1];if(!code)return fallbackVerseWindow(x,rows);const key=`${code}:${x.chapter}`;if(!topicSectionCache.has(key))topicSectionCache.set(key,(async()=>{const url=`https://raw.githubusercontent.com/BSB-publishing/bsb-data-output/main/base/display/${code}/${code}${x.chapter}.jsonl`,txt=await cachedSourceText(url,'verse-study-bsb-sections-v2'),heads=[];let last=0;for(const line of txt.split(/\r?\n/)){if(!line.trim())continue;let o;try{o=JSON.parse(line)}catch{continue}const v=Number(Object.keys(o.eng||{})[0]||Object.keys(o.structure||{})[0]);if(!v)continue;last=Math.max(last,v);const h=o.structure?.[String(v)]?.headings||o.structure?.[v]?.headings||[];if(h.length){const title=cleanLexText(h.map(z=>z.text||'').filter(Boolean).join(' · '));heads.push({verse:v,title})}}return{heads,last}})());try{const{heads,last}=await topicSectionCache.get(key);if(!last)return fallbackVerseWindow(x,rows);const starts=[{verse:1,title:''},...heads.filter(h=>h.verse>1)].sort((a,b)=>a.verse-b.verse),i=Math.max(0,starts.findLastIndex(h=>h.verse<=Number(x.verse))),cur=starts[i],next=starts[i+1],prev=starts[i-1];return{start:cur.verse,end:next?next.verse-1:last,title:cur.title,prevStart:prev?.verse??null,nextStart:next?.verse??null,fallback:false}}catch{return fallbackVerseWindow(x,rows)}}
-function renderScrollableChapter(el,chapter,x,type,refs,idx,section){const rows=chapterRows(chapter);if(!rows.length)throw new Error();el.innerHTML='';el.classList.add('translation-scroll');const range=section||fallbackVerseWindow(x,rows),windowRows=rows.filter(r=>{const v=Number(r.verse);return v>=range.start&&v<=range.end});if(idx===0)activeTopicSection={...range,book:x.book,chapter:x.chapter};let currentRow=null,currentText='';for(const item of windowRows){const v=Number(item.verse);if(!v)continue;const row=document.createElement('div');row.className='verse-line'+(v===Number(x.verse)?' current-verse':'');row.dataset.verse=String(v);row.setAttribute('role','button');row.tabIndex=0;row.title='Tap to study this verse';row.onclick=e=>{if(e.target.closest('button'))return;goTo({book:x.book,chapter:x.chapter,verse:v})};row.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();goTo({book:x.book,chapter:x.chapter,verse:v})}};const num=document.createElement('span');num.className='verse-num';num.textContent=v;const txt=document.createElement('span');txt.className='verse-text';txt.textContent=htmlToText(item.text||'');row.append(num,txt);el.appendChild(row);if(v===Number(x.verse)){currentRow=row;currentText=txt.textContent;addVerseTools(row,htmlToText(item.comment||''),type,refs)}window.VS_STUDIES?.decorateVerse(row,x,v,type)}if(idx===0){currentPreciseText=currentText;loadWordStudy({...x})}requestAnimationFrame(()=>{if(currentRow)el.scrollTop=Math.max(0,currentRow.offsetTop-el.offsetTop-8)})}
-async function loadTranslations(x){const token=++translationToken,refsPromise=getCrossRefs(x),baseChapterPromise=getChapter(settings.precise,x),sectionPromise=baseChapterPromise.then(ch=>getTopicSection(x,chapterRows(ch))).catch(()=>null),slots=[['preciseText',settings.precise],['looseText',settings.loose],['paraphraseText',settings.paraphrase]];slots.forEach(async([id,type],idx)=>{const el=$(id);try{if(type===TCW_CODE){const r=await publicVerse(type,x);if(token!==translationToken)return;el.classList.remove('translation-scroll');el.innerHTML=`<div>${esc(r.text)}</div>`;return}const chapterPromise=idx===0?baseChapterPromise:getChapter(type,x),[chapter,refs,section]=await Promise.all([chapterPromise,idx===0?refsPromise:Promise.resolve([]),sectionPromise]);if(token!==translationToken)return;renderScrollableChapter(el,chapter,x,type,refs,idx,section)}catch{try{const r=await publicVerse(type,x);if(token!==translationToken)return;el.classList.remove('translation-scroll');el.innerHTML=`<div>${esc(r.text)}</div>`;if(idx===0){currentPreciseText=r.text;loadWordStudy({...x})}}catch{el.classList.remove('translation-scroll');el.innerHTML=`<div class="small">${esc(type)} could not load. Tap the current verse to retry.</div>`}}})}
+function renderScrollableChapter(el,chapter,x,type,refs,idx,section){const rows=chapterRows(chapter);if(!rows.length)throw new Error();el.innerHTML='';el.classList.add('translation-scroll');const range=section||fallbackVerseWindow(x,rows),windowRows=rows.filter(r=>{const v=Number(r.verse);return v>=range.start&&v<=range.end});if(idx===0)activeTopicSection={...range,book:x.book,chapter:x.chapter};let currentRow=null,currentText='';for(const item of windowRows){const v=Number(item.verse);if(!v)continue;const row=document.createElement('div');row.className='verse-line'+(v===Number(x.verse)?' current-verse':'');row.dataset.verse=String(v);row.setAttribute('role','button');row.tabIndex=0;row.title='Tap to study this verse';row.onclick=e=>{if(e.target.closest('button'))return;goTo({book:x.book,chapter:x.chapter,verse:v})};row.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();goTo({book:x.book,chapter:x.chapter,verse:v})}};const num=document.createElement('span');num.className='verse-num';num.textContent=v;const txt=document.createElement('span');txt.className='verse-text';const plain=htmlToText(item.text||'');if(idx===0)wordStudyMakeVerseClickable(txt,plain,{book:x.book,chapter:x.chapter,verse:v});else txt.textContent=plain;row.append(num,txt);el.appendChild(row);if(v===Number(x.verse)){currentRow=row;currentText=txt.textContent;addVerseTools(row,htmlToText(item.comment||''),type,refs)}window.VS_STUDIES?.decorateVerse(row,x,v,type)}if(idx===0){currentPreciseText=currentText;loadWordStudy({...x})}requestAnimationFrame(()=>{if(currentRow)el.scrollTop=Math.max(0,currentRow.offsetTop-el.offsetTop-8)})}
+async function loadTranslations(x){const token=++translationToken,refsPromise=getCrossRefs(x),baseChapterPromise=getChapter(settings.precise,x),sectionPromise=baseChapterPromise.then(ch=>getTopicSection(x,chapterRows(ch))).catch(()=>null),slots=[['preciseText',settings.precise],['looseText',settings.loose],['paraphraseText',settings.paraphrase]];slots.forEach(async([id,type],idx)=>{const el=$(id);try{if(type===TCW_CODE){const r=await publicVerse(type,x);if(token!==translationToken)return;el.classList.remove('translation-scroll');el.innerHTML=`<div>${esc(r.text)}</div>`;return}const chapterPromise=idx===0?baseChapterPromise:getChapter(type,x),[chapter,refs,section]=await Promise.all([chapterPromise,idx===0?refsPromise:Promise.resolve([]),sectionPromise]);if(token!==translationToken)return;renderScrollableChapter(el,chapter,x,type,refs,idx,section)}catch{try{const r=await publicVerse(type,x);if(token!==translationToken)return;el.classList.remove('translation-scroll');el.innerHTML='';if(idx===0){const txt=document.createElement('span');txt.className='verse-text';wordStudyMakeVerseClickable(txt,r.text,x);el.appendChild(txt);currentPreciseText=r.text;loadWordStudy({...x})}else el.innerHTML=`<div>${esc(r.text)}</div>`}catch{el.classList.remove('translation-scroll');el.innerHTML=`<div class="small">${esc(type)} could not load. Tap the current verse to retry.</div>`}}})}
 const HENRY_BOOKS=Object.fromEntries(BOOKS.map(b=>[b.id,b.name.toLowerCase().replace(/ /g,'-')]));
 function parseHenryCommentary(md,verse){const body=String(md||'').replace(/^---[\s\S]*?---/,'');const re=/## Verses?\s+(\d+)(?:[–-](\d+))?\s*\n\n([\s\S]*?)(?=\n## |$)/g;let m;while((m=re.exec(body))){const a=Number(m[1]),b=Number(m[2]||m[1]);if(verse>=a&&verse<=b)return{text:m[3].replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[*_#>`]/g,'').replace(/\s+/g,' ').trim(),a,b}}return null}
 async function loadHenry(x){const el=$('commonCommentary'),title=$('commonCommentaryTitle');if(!el)return;const slug=HENRY_BOOKS[x.book];try{const ck=`vs421_henry_${x.book}_${x.chapter}`;let md=SAFE_STORAGE.getItem(ck);if(!md){const filename=x.book===19?`psalm-${x.chapter}.md`:`chapter-${x.chapter}.md`;const r=await fetch(`https://raw.githubusercontent.com/lyteword/mhenry-concise/main/${slug}/${filename}`,{cache:'force-cache'});if(!r.ok)throw new Error();md=await r.text();SAFE_STORAGE.setItem(ck,md)}const result=parseHenryCommentary(md,x.verse);if(result){title.textContent=`Matthew Henry Concise · ${refOf(x)}`;el.textContent=result.text}else el.textContent='No separate comment was found for this verse.'}catch{el.textContent='Common commentary could not load.'}}
@@ -203,8 +204,154 @@ function wordStudyIsKey(w){
  if(!grammar||grammar==='hebrew word'||grammar==='word')return !!w.strong&&!/^(and|the|a|an|of|to|in|on|with|for|or|from|by|he|she|it)\b/.test(gloss);
  return false;
 }
+
+/* V4.62: tap an English verse word to explore its original-language context. */
+function wordStudyTokens(text){
+ const rx=/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+ return [...String(text||'').matchAll(rx)].map(m=>({text:m[0],start:m.index,end:m.index+m[0].length}));
+}
+function wordStudyWordStem(text){
+ let w=normEnglish(text).replace(/[^a-z0-9]/g,'');
+ if(w.length<5)return w;
+ if(/ies$/.test(w))w=w.slice(0,-3)+'y';
+ else if(/ing$/.test(w))w=w.slice(0,-3);
+ else if(/ied$/.test(w))w=w.slice(0,-3)+'y';
+ else if(/ed$/.test(w))w=w.slice(0,-2);
+ else if(/es$/.test(w))w=w.slice(0,-2);
+ else if(/s$/.test(w))w=w.slice(0,-1);
+ return w.replace(/e$/,'');
+}
+function wordStudyGlossScore(token,gloss){
+ const sought=normEnglish(token);if(!sought)return 0;
+ const parts=wordStudyTokens(gloss).map(x=>normEnglish(x.text)).filter(Boolean);
+ if(parts.includes(sought))return 100;
+ const stem=wordStudyWordStem(sought);
+ if(stem.length>=3&&parts.some(p=>wordStudyWordStem(p)===stem))return 75;
+ /* The following are common English gloss correspondences, not a substitute for an interlinear alignment. */
+ const aliases={
+  whoever:['everyone','anyone','who'],anyone:['everyone','whoever'],believes:['believing','believe'],
+  believed:['believe','believing'],his:['him','of him'],him:['his','of him'],
+  heaven:['heavens'],heavens:['heaven'],eternal:['everlasting'],everlasting:['eternal'],
+  give:['gave','given'],gave:['give','given'],wept:['weep'],weeps:['weep']
+ };
+ if((aliases[sought]||[]).some(a=>parts.includes(a)||parts.includes(wordStudyWordStem(a))))return 55;
+ return 0;
+}
+function wordStudyFindAlignment(items,tap){
+ const tokens=wordStudyTokens(currentPreciseText);
+ const word=tokens[tap.index]?.text||tap.word||'';
+ if(!items.length)return {index:0,approximate:true};
+ const ratio=(tap.index+.5)/Math.max(1,tokens.length),isGreek=current.book>=40;
+ let best=-Infinity,bestIndex=0,bestGloss=0;
+ for(let i=0;i<items.length;i++){
+  const item=items[i];
+  const gloss=String(item.alignGloss||'');
+  const score=wordStudyGlossScore(word,gloss);
+  const distance=Math.abs((i+.5)/items.length-ratio);
+  /* A match to the source's per-word translation outweighs English word-order differences. */
+  const rank=score?score-distance*8:-100-distance*8;
+  if(rank>best){best=rank;bestIndex=i;bestGloss=score}
+ }
+ if(bestGloss>=55){
+  return {index:bestIndex,approximate:!isGreek||bestGloss<75};
+ }
+ /* If the English has no direct source gloss, make an explicitly approximate positional choice. */
+ const nearest=Math.max(0,Math.min(items.length-1,Math.round(ratio*items.length-.5)));
+ return {index:nearest,approximate:true};
+}
+function wordStudyLocationKey(x){return [x.book,x.chapter,x.verse].join(':')}
+function wordStudyMarkTappedWords(){
+ document.querySelectorAll('#preciseText .vs-tap-word').forEach(node=>{
+  const row=node.closest('.verse-line');
+  const selected=!!wordStudyTap&&row&&Number(row.dataset.verse)===wordStudyTap.verse
+   &&current.book===wordStudyTap.book&&current.chapter===wordStudyTap.chapter
+   &&Number(node.dataset.wordIndex)===wordStudyTap.index;
+  node.classList.toggle('vs-tap-selected',selected);
+  node.setAttribute('aria-pressed',String(selected));
+ });
+}
+function wordStudyTapEnglish(x,index,word){
+ wordStudyTap={book:Number(x.book),chapter:Number(x.chapter),verse:Number(x.verse),index,word};
+ wordStudyFocusedIndex=null;wordStudyMode='focus';
+ const isCurrent=wordStudyLocationKey(x)===wordStudyLocationKey(current);
+ if(!isCurrent){goTo(x,true);return}
+ wordStudyMarkTappedWords();
+ const el=$('wordStudy'),saved=wordStudyLoaded;
+ if(saved&&saved.key===wordStudyLocationKey(current))wordStudyRender(el,saved.items);
+ else if(el)el.textContent='Finding the original-language word…';
+}
+function wordStudyMakeVerseClickable(txt,text,x){
+ txt.textContent='';
+ let pos=0;
+ const parts=wordStudyTokens(text);
+ parts.forEach((word,i)=>{
+  if(word.start>pos)txt.appendChild(document.createTextNode(text.slice(pos,word.start)));
+  const span=document.createElement('span');
+  span.className='vs-tap-word';span.setAttribute('role','button');span.tabIndex=0;
+  span.dataset.wordIndex=String(i);span.textContent=word.text;
+  span.title='Study '+word.text+' in the original language';
+  span.setAttribute('aria-label','Study word '+word.text);
+  span.onclick=e=>{e.stopPropagation();wordStudyTapEnglish(x,i,word.text)};
+  span.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();wordStudyTapEnglish(x,i,word.text)}};
+  txt.appendChild(span);pos=word.end;
+ });
+ if(pos<text.length)txt.appendChild(document.createTextNode(text.slice(pos)));
+ if(wordStudyTap&&wordStudyTap.book===x.book&&wordStudyTap.chapter===x.chapter&&wordStudyTap.verse===x.verse){
+  const selected=txt.querySelector('[data-word-index="'+wordStudyTap.index+'"]');
+  if(selected){selected.classList.add('vs-tap-selected');selected.setAttribute('aria-pressed','true')}
+ }
+}
+function wordStudyRenderFocus(el,items){
+ if(!wordStudyTap)return;
+ if(wordStudyFocusedIndex==null){
+  const match=wordStudyFindAlignment(items,wordStudyTap);
+  wordStudyFocusedIndex=match.index;
+ }
+ const match=wordStudyFindAlignment(items,wordStudyTap);
+ const i=Math.max(0,Math.min(items.length-1,wordStudyFocusedIndex));
+ const approx=match.approximate;
+ const start=Math.max(0,i-1),end=Math.min(items.length-1,i+1);
+ const key=wordStudyTap.word||wordStudyTokens(currentPreciseText)[wordStudyTap.index]?.text||'';
+ el.innerHTML='<div class="vs-word-focus-label">Tapped word: <b>'+esc(key)+'</b> · Original-language context</div>'
+  +'<div class="vs-word-focus-nav" role="group" aria-label="Original-language word context"></div>'
+  +'<div class="vs-word-focus-detail">'+wordStudyHtml(items[i])+'</div>'
+  +(approx?'<div class="vs-word-focus-note">English and original-language words do not always correspond one-to-one. This is an approximate match; use the neighboring words to confirm the context.</div>':'')
+  +'<div class="vs-word-focus-actions"></div>';
+ const nav=el.querySelector('.vs-word-focus-nav');
+ for(let p=start;p<=end;p++){
+  const w=items[p],button=document.createElement('button');
+  button.type='button';
+  button.className='vs-word-neighbor'+(p===i?' active':'');
+  button.textContent=w.original||w.lemma||w.strong||'Word';
+  button.title=(p===i?'Selected word':p<i?'Previous word':'Next word')+' · '+(w.gloss||w.meaning||'');
+  button.setAttribute('aria-label',(p===i?'Selected':p<i?'Previous':'Next')+' original word: '+(w.original||w.strong||''));
+  button.setAttribute('aria-pressed',String(p===i));
+  button.onclick=()=>{wordStudyFocusedIndex=p;wordStudyRender(el,items)};
+  nav.appendChild(button);
+ }
+ const actions=el.querySelector('.vs-word-focus-actions');
+ const all=document.createElement('button');all.type='button';all.className='vs-verse-tool';all.textContent='Show all words';
+ all.onclick=()=>{wordStudyMode='all';wordStudyRender(el,items)};actions.appendChild(all);
+ const back=document.createElement('button');back.type='button';back.className='vs-verse-tool';back.textContent='Return to key words';
+ back.onclick=()=>{wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key';wordStudyMarkTappedWords();wordStudyRender(el,items)};
+ actions.appendChild(back);
+}
+function wordStudyRenderAll(el,items){
+ el.innerHTML='<div class="small" style="margin:7px 0 8px">All original-language words in verse order ('+items.length+')</div>'
+  +items.map(w=>wordStudyHtml(w)).join('');
+ const controls=document.createElement('div');controls.className='vs-word-focus-actions';
+ const back=document.createElement('button');back.type='button';back.className='vs-verse-tool';
+ back.textContent=wordStudyTap?'Back to selected word':'Show key words';
+ back.onclick=()=>{wordStudyMode=wordStudyTap?'focus':'key';wordStudyRender(el,items)};
+ controls.appendChild(back);el.insertBefore(controls,el.firstChild);
+}
 function wordStudyRender(el,items){
  if(!items.length){el.innerHTML='<div class="small">No original-language words found for this verse.</div>';return}
+ wordStudyLoaded={key:wordStudyLocationKey(current),items};
+ if(wordStudyTap&&wordStudyLocationKey(wordStudyTap)===wordStudyLocationKey(current)&&wordStudyMode==='focus'){
+  wordStudyRenderFocus(el,items);return;
+ }
+ if(wordStudyMode==='all'){wordStudyRenderAll(el,items);return}
  const chosen=items.map(wordStudyIsKey);
  if(!chosen.some(Boolean)){
   const candidates=items.map((w,i)=>({w,i})).filter(({w})=>w.strong&&!/^(article|conjunction|preposition|particle)\b/i.test(String(w.grammar||'')));
@@ -246,7 +393,7 @@ async function loadWordStudy(x){
     const strong=cleanStrong(w),basic=cleanLexText(w.metadata?.gloss||w.metadata?.subMeaning||w.translation||''),context=cleanLexText(w.translation||''),original=cleanLexText(w.text||''),lemma=typeof w.lemma==='string'&&/[\u0370-\u03ff\u1f00-\u1fff]/u.test(w.lemma)?w.lemma:'',lexEntry=wordStudyIndexedGreekLex(lex,strong)||{};
     const meaning=lexEntry.definition||basic||context;
     const other=lexEntry.usage&&normEnglish(lexEntry.usage)!==normEnglish(meaning)&&lexEntry.usage.split(/[,;]/).length>1?'Other renderings: '+lexEntry.usage:'';
-    return {original,lemma,strong,grammar:morphExplanation(w.morph),verseWord:wordStudyMatch(context||basic),gloss:context||basic,meaning,root:lexEntry.derivation,deeper:other||basic||meaning,important:wordStudyGreekImportant(w)};
+    return {original,lemma,strong,grammar:morphExplanation(w.morph),verseWord:wordStudyMatch(context||basic),gloss:context||basic,meaning,root:lexEntry.derivation,deeper:other||basic||meaning,alignGloss:context||basic,gloss:context||basic,important:wordStudyGreekImportant(w)};
    });
    wordStudyRender(el,items);
   }else{
@@ -263,7 +410,7 @@ async function loadWordStudy(x){
     const raw=node.textContent||'',lemma=node.getAttribute('lemma')||'',morph=node.getAttribute('morph')||'',strong=hebrewStrong(lemma),lexEntry=hebrewLexEntry(entries.get(strong));
     const uses=cleanLexText(lexEntry.usage||'');
     const cleanParts=raw.split('/').map(s=>s.trim()).filter(Boolean);
-    return {original:raw.replaceAll('/',''),strong,grammar:wordStudyHebrewGrammar(morph),parts:cleanParts.length>1?cleanParts.join(' / '):'',verseWord:wordStudyMatch(uses.split(/[,;]/).slice(0,3).join(' ')),gloss:'',meaning:lexEntry.definition||uses,root:lexEntry.derivation,deeper:uses||lexEntry.definition,rtl:true,important:wordStudyHebrewImportant({morph,strong})};
+    return {original:raw.replaceAll('/',''),strong,grammar:wordStudyHebrewGrammar(morph),parts:cleanParts.length>1?cleanParts.join(' / '):'',verseWord:wordStudyMatch(uses.split(/[,;]/).slice(0,3).join(' ')),gloss:'',meaning:lexEntry.definition||uses,root:lexEntry.derivation,deeper:uses||lexEntry.definition,alignGloss:uses||lexEntry.definition,rtl:true,important:wordStudyHebrewImportant({morph,strong})};
    });
    wordStudyRender(el,items);
   }
@@ -281,8 +428,8 @@ function updateBookmarkUI(){const marked=isBookmarked(),count=loadBookmarks().le
 function toggleCurrentBookmark(){let a=loadBookmarks(),key=locationKey(current);a=a.some(b=>locationKey(b)===key)?a.filter(b=>locationKey(b)!==key):[...a,{...current}];saveBookmarks(a);updateBookmarkUI()}
 function commentarySection(id,title,loading){return`<section class="group-section commentary-section"><div class="eyebrow" id="${id}Title">${title}</div><div id="${id}" class="commentary-body">${loading}</div></section>`}
 function commentaryCard(id,title,loading){return`<article class="card nested-scroll-card"><div class="eyebrow" id="${id}Title">${title}</div><div id="${id}" class="commentary-body">${loading}</div></article>`}
-function render(){currentPreciseText='';const ref=refOf();$('cur').textContent=ref;$('cur').setAttribute('aria-label',`Choose verse, current ${ref}`);let html=`<article class="card grouped-card translations-card"><section class="group-section translation-section"><div class="eyebrow">Precise · ${esc(settings.precise)}</div><div id="preciseText" class="note">Loading ${esc(settings.precise)}…</div></section><section class="group-section translation-section"><div class="eyebrow">Loose · ${esc(settings.loose)}</div><div id="looseText" class="note">Loading ${esc(settings.loose)}…</div></section><section class="group-section translation-section"><div class="eyebrow">Paraphrase · ${esc(settings.paraphrase)}</div><div id="paraphraseText" class="note">Loading ${esc(settings.paraphrase)}…</div></section></article><article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>`;if(settings.showHenry||settings.showSda){html+='<article class="card grouped-card commentary-group">';if(settings.showHenry)html+=commentarySection('commonCommentary','Common Commentary · Matthew Henry Concise','Loading commentary…');if(settings.showSda)html+=commentarySection('sdaCommentary','SDA Commentary · SDA Bible Commentary','Loading SDA commentary…');html+='</article>'}if(settings.showAi)html+=commentaryCard('aiCommentary','AI Commentary','Generating AI commentary…');$('study').innerHTML=html;SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));updateBookmarkUI();loadTranslations({...current});if(settings.showHenry)loadHenry({...current});if(settings.showSda)loadSda({...current});if(settings.showAi)loadAI({...current})}
-function goTo(x){if(!validLocation(x))return;current={book:+x.book,chapter:+x.chapter,verse:+x.verse};infoClose();closeAll();render()}
+function render(){currentPreciseText='';wordStudyLoaded=null;const ref=refOf();$('cur').textContent=ref;$('cur').setAttribute('aria-label',`Choose verse, current ${ref}`);let html=`<article class="card grouped-card translations-card"><section class="group-section translation-section"><div class="eyebrow">Precise · ${esc(settings.precise)}</div><div id="preciseText" class="note">Loading ${esc(settings.precise)}…</div></section><section class="group-section translation-section"><div class="eyebrow">Loose · ${esc(settings.loose)}</div><div id="looseText" class="note">Loading ${esc(settings.loose)}…</div></section><section class="group-section translation-section"><div class="eyebrow">Paraphrase · ${esc(settings.paraphrase)}</div><div id="paraphraseText" class="note">Loading ${esc(settings.paraphrase)}…</div></section></article><article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>`;if(settings.showHenry||settings.showSda){html+='<article class="card grouped-card commentary-group">';if(settings.showHenry)html+=commentarySection('commonCommentary','Common Commentary · Matthew Henry Concise','Loading commentary…');if(settings.showSda)html+=commentarySection('sdaCommentary','SDA Commentary · SDA Bible Commentary','Loading SDA commentary…');html+='</article>'}if(settings.showAi)html+=commentaryCard('aiCommentary','AI Commentary','Generating AI commentary…');$('study').innerHTML=html;SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));updateBookmarkUI();loadTranslations({...current});if(settings.showHenry)loadHenry({...current});if(settings.showSda)loadSda({...current});if(settings.showAi)loadAI({...current})}
+function goTo(x,keepWordStudyFocus=false){if(!validLocation(x))return;if(!keepWordStudyFocus){wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key'}current={book:+x.book,chapter:+x.chapter,verse:+x.verse};infoClose();closeAll();render()}
 const BOOK_GROUPS={OT:[{title:'Law',ids:[1,2,3,4,5]},{title:'History & Wisdom',ids:[6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]},{title:'Prophets',ids:[23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39]}],NT:[{title:'Gospels & Acts',ids:[40,41,42,43,44]},{title:"Paul's Letters",ids:[45,46,47,48,49,50,51,52,53,54,55,56,57]},{title:'General & Revelation',ids:[58,59,60,61,62,63,64,65,66]}]};
 function setMainTab(t){pickerTestament=t;$('otTab').classList.toggle('active',t==='OT');$('ntTab').classList.toggle('active',t==='NT');$('studiesTab').classList.toggle('active',t==='STUDIES');$('chapterScreen').style.display='none';$('verseScreen').style.display='none';$('studyDetailScreen').style.display='none';$('booksScreen').style.display='block';if(t==='STUDIES'){$('bookColumns').style.display='none';$('savedPickerSection').style.display='block';renderSavedPicker()}else{$('savedPickerSection').style.display='none';$('bookColumns').style.display='grid';renderBookColumns()}}
 function renderBookColumns(){const box=$('bookColumns');box.innerHTML='';BOOK_GROUPS[pickerTestament].forEach(g=>{const col=document.createElement('section');col.className='booksection';const h=document.createElement('div');h.className='sectiontitle';h.textContent=g.title;col.appendChild(h);g.ids.forEach(id=>{const b=bookById(id),btn=document.createElement('button');btn.className='bookbtn';if(id===current.book)btn.classList.add('current');if(id===pickerBook)btn.classList.add('selected');btn.textContent=b.name;btn.onclick=()=>selectBookForChapters(id);col.appendChild(btn)});box.appendChild(col)})}
