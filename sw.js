@@ -1,4 +1,4 @@
-const CACHE='verse-study-v465';
+const CACHE='verse-study-v466';
 const SHELL=['./','./index.html','./styles-v421.css?v=465','./preloaded-markings.js?v=465','./preloaded-lessons.js?v=465','./study-markings.js?v=465','./app-v421.js?v=465','./manifest.webmanifest','./icon.svg','./share-qr.svg'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);for(const url of SHELL){try{await cache.add(url)}catch{}}await self.skipWaiting()})()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key!==CACHE&&key.startsWith('verse-study-'))await caches.delete(key);await self.clients.claim()})()));
