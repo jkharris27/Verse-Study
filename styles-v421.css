@@ -113,3 +113,5 @@ header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(8px);
 .vs-word-focus-detail .wordrow{border-top:0;padding:3px 0 9px}
 .vs-word-focus-note{font-size:12px;line-height:1.45;color:var(--muted);margin:10px 0}
 .vs-word-focus-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+.wordstudy{scroll-margin-top:88px}
