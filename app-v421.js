@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='V4.62', SHARE_URL='https://jkharris27.github.io/Verse-Study/';
+const VERSION='V4.63', SHARE_URL='https://jkharris27.github.io/Verse-Study/';
 const $=id=>document.getElementById(id);
 const SAFE_STORAGE={getItem:k=>{try{return localStorage.getItem(k)}catch{return null}},setItem:(k,v)=>{try{localStorage.setItem(k,v)}catch{}},removeItem:k=>{try{localStorage.removeItem(k)}catch{}}};
 const names=['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi','Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
@@ -18,6 +18,8 @@ function syncSettingsUI(){normalizeSettings();buildVersionSelect('preciseVersion
 $('resetSettings').onclick=()=>{settings={...DEFAULT_SETTINGS};saveSettings();syncSettingsUI();render()};
 let current={book:43,chapter:8,verse:1}, currentPreciseText='', translationToken=0, pickerBook=null,pickerChapter=null,pickerTestament='NT';
 let wordStudyTap=null,wordStudyFocusedIndex=null,wordStudyMode='key',wordStudyLoaded=null,wordStudyScrollPending=false;
+let contextRevision=0,verseContextTimer=0,aiContextTimer=0,scrollFrame=0,pendingScrollSource=null,lastReadingAnchor=null;
+const TRANSLATION_IDS=['preciseText','looseText','paraphraseText'],programmaticScroll=new WeakMap();
 function validLocation(x){const b=bookById(x?.book);return !!(b&&Number(x.chapter)>=1&&Number(x.chapter)<=b.chapters&&Number(x.verse)>=1)}
 function loadLocation(k){try{const x=JSON.parse(SAFE_STORAGE.getItem(k)||'null');return validLocation(x)?x:null}catch{return null}}
 const last=loadLocation('verseStudy.lastLocation');if(last)current=last;
@@ -73,18 +75,260 @@ function chapterRows(data){return Array.isArray(data)?data:Array.isArray(data?.v
 const topicSectionCache=new Map();let activeTopicSection=null;
 function fallbackVerseWindow(x,rows){const verses=rows.map(r=>Number(r.verse)).filter(Boolean),last=Math.max(...verses),start=Math.min(Number(x.verse),Math.max(1,last-4)),end=Math.min(last,start+4);return{start,end,title:'',prevStart:start>1?Math.max(1,start-5):null,nextStart:end<last?end+1:null,fallback:true}}
 async function getTopicSection(x,rows){const code=BOOK_IDS[x.book-1];if(!code)return fallbackVerseWindow(x,rows);const key=`${code}:${x.chapter}`;if(!topicSectionCache.has(key))topicSectionCache.set(key,(async()=>{const url=`https://raw.githubusercontent.com/BSB-publishing/bsb-data-output/main/base/display/${code}/${code}${x.chapter}.jsonl`,txt=await cachedSourceText(url,'verse-study-bsb-sections-v2'),heads=[];let last=0;for(const line of txt.split(/\r?\n/)){if(!line.trim())continue;let o;try{o=JSON.parse(line)}catch{continue}const v=Number(Object.keys(o.eng||{})[0]||Object.keys(o.structure||{})[0]);if(!v)continue;last=Math.max(last,v);const h=o.structure?.[String(v)]?.headings||o.structure?.[v]?.headings||[];if(h.length){const title=cleanLexText(h.map(z=>z.text||'').filter(Boolean).join(' · '));heads.push({verse:v,title})}}return{heads,last}})());try{const{heads,last}=await topicSectionCache.get(key);if(!last)return fallbackVerseWindow(x,rows);const starts=[{verse:1,title:''},...heads.filter(h=>h.verse>1)].sort((a,b)=>a.verse-b.verse),i=Math.max(0,starts.findLastIndex(h=>h.verse<=Number(x.verse))),cur=starts[i],next=starts[i+1],prev=starts[i-1];return{start:cur.verse,end:next?next.verse-1:last,title:cur.title,prevStart:prev?.verse??null,nextStart:next?.verse??null,fallback:false}}catch{return fallbackVerseWindow(x,rows)}}
-function renderScrollableChapter(el,chapter,x,type,refs,idx,section){const rows=chapterRows(chapter);if(!rows.length)throw new Error();el.innerHTML='';el.classList.add('translation-scroll');const range=section||fallbackVerseWindow(x,rows),windowRows=rows.filter(r=>{const v=Number(r.verse);return v>=range.start&&v<=range.end});if(idx===0)activeTopicSection={...range,book:x.book,chapter:x.chapter};let currentRow=null,currentText='';for(const item of windowRows){const v=Number(item.verse);if(!v)continue;const row=document.createElement('div');row.className='verse-line'+(v===Number(x.verse)?' current-verse':'');row.dataset.verse=String(v);row.setAttribute('role','button');row.tabIndex=0;row.title='Tap to study this verse';row.onclick=e=>{if(e.target.closest('button'))return;goTo({book:x.book,chapter:x.chapter,verse:v})};row.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();goTo({book:x.book,chapter:x.chapter,verse:v})}};const num=document.createElement('span');num.className='verse-num';num.textContent=v;const txt=document.createElement('span');txt.className='verse-text';const plain=htmlToText(item.text||'');if(idx===0)wordStudyMakeVerseClickable(txt,plain,{book:x.book,chapter:x.chapter,verse:v});else txt.textContent=plain;row.append(num,txt);el.appendChild(row);if(v===Number(x.verse)){currentRow=row;currentText=txt.textContent;addVerseTools(row,htmlToText(item.comment||''),type,refs)}window.VS_STUDIES?.decorateVerse(row,x,v,type)}if(idx===0){currentPreciseText=currentText;loadWordStudy({...x})}requestAnimationFrame(()=>{if(currentRow)el.scrollTop=Math.max(0,currentRow.offsetTop-el.offsetTop-8)})}
-async function loadTranslations(x){const token=++translationToken,refsPromise=getCrossRefs(x),baseChapterPromise=getChapter(settings.precise,x),sectionPromise=baseChapterPromise.then(ch=>getTopicSection(x,chapterRows(ch))).catch(()=>null),slots=[['preciseText',settings.precise],['looseText',settings.loose],['paraphraseText',settings.paraphrase]];slots.forEach(async([id,type],idx)=>{const el=$(id);try{if(type===TCW_CODE){const r=await publicVerse(type,x);if(token!==translationToken)return;el.classList.remove('translation-scroll');el.innerHTML=`<div>${esc(r.text)}</div>`;return}const chapterPromise=idx===0?baseChapterPromise:getChapter(type,x),[chapter,refs,section]=await Promise.all([chapterPromise,idx===0?refsPromise:Promise.resolve([]),sectionPromise]);if(token!==translationToken)return;renderScrollableChapter(el,chapter,x,type,refs,idx,section)}catch{try{const r=await publicVerse(type,x);if(token!==translationToken)return;el.classList.remove('translation-scroll');el.innerHTML='';if(idx===0){const txt=document.createElement('span');txt.className='verse-text';wordStudyMakeVerseClickable(txt,r.text,x);el.appendChild(txt);currentPreciseText=r.text;loadWordStudy({...x})}else el.innerHTML=`<div>${esc(r.text)}</div>`}catch{el.classList.remove('translation-scroll');el.innerHTML=`<div class="small">${esc(type)} could not load. Tap the current verse to retry.</div>`}}})}
+/* V4.63: whichever translation the reader scrolls drives all three and the active verse. */
+function translationRows(el){return el?[...el.querySelectorAll('.verse-line[data-verse]')]:[]}
+function nearestTranslationRow(el,verse){
+ const rows=translationRows(el);
+ return rows.find(r=>Number(r.dataset.verse)===Number(verse))
+  ||rows.reduce((best,row)=>!best||Math.abs(Number(row.dataset.verse)-verse)<Math.abs(Number(best.dataset.verse)-verse)?row:best,null);
+}
+function translationRowTop(row,el){return row.getBoundingClientRect().top-el.getBoundingClientRect().top+el.scrollTop}
+function scrollTranslationInstant(el,top){
+ if(!el||!el.classList.contains('translation-scroll'))return;
+ const limited=Math.max(0,Math.min(Math.round(top),Math.max(0,el.scrollHeight-el.clientHeight)));
+ if(Math.abs(limited-el.scrollTop)<1)return;
+ programmaticScroll.set(el,limited);
+ el.scrollTop=limited;
+}
+function readingFocusY(el){return el.clientHeight*.28}
+function currentReadingAnchor(el){
+ const rows=translationRows(el);if(!rows.length)return null;
+ const probe=el.scrollTop+readingFocusY(el);
+ const row=rows.find(r=>translationRowTop(r,el)+r.offsetHeight>probe)||rows[rows.length-1];
+ const fraction=Math.max(0,Math.min(1,(probe-translationRowTop(row,el))/Math.max(1,row.offsetHeight)));
+ return {verse:Number(row.dataset.verse),fraction};
+}
+function positionTranslationAtAnchor(el,anchor){
+ const row=nearestTranslationRow(el,anchor.verse);if(!row)return;
+ scrollTranslationInstant(el,translationRowTop(row,el)+anchor.fraction*row.offsetHeight-readingFocusY(el));
+}
+function synchronizeTranslations(anchor,driver){
+ lastReadingAnchor=anchor;
+ for(const id of TRANSLATION_IDS){const el=$(id);if(el&&el!==driver)positionTranslationAtAnchor(el,anchor)}
+}
+function updateActiveVerseHighlights(){
+ for(const id of TRANSLATION_IDS){
+  const el=$(id);
+  for(const row of translationRows(el))row.classList.toggle('current-verse',Number(row.dataset.verse)===Number(current.verse));
+ }
+}
+function contextIsCurrent(x,revision,element,id){
+ return revision===contextRevision&&current.book===x.book&&current.chapter===x.chapter&&current.verse===x.verse&&(!id||$(id)===element);
+}
+function refreshActiveVerseContent(fromScroll){
+ clearTimeout(verseContextTimer);clearTimeout(aiContextTimer);
+ const x={...current},revision=contextRevision;
+ const word=$('wordStudy'),wordTitle=$('wordStudyTitle');
+ if(word){word.textContent='Loading original-language word study…';if(wordTitle)wordTitle.textContent=x.book>=40?'Word Study · Greek':'Word Study · Hebrew'}
+ const common=$('commonCommentary');if(common){common.textContent='Loading commentary…';$('commonCommentaryTitle').textContent='Matthew Henry Concise · '+refOf(x)}
+ const sda=$('sdaCommentary');if(sda){sda.textContent='Loading SDA commentary…';$('sdaCommentaryTitle').textContent='SDA Commentary · '+refOf(x)}
+ const ai=$('aiCommentary');if(ai)ai.textContent='Loading AI commentary…';
+ const still=()=>contextIsCurrent(x,revision);
+ const read=()=>{
+  if(!still())return;
+  const precise=nearestTranslationRow($('preciseText'),x.verse);
+  if(precise&&Number(precise.dataset.verse)===x.verse)currentPreciseText=precise.querySelector('.verse-text')?.textContent||'';
+  loadWordStudy(x,revision);
+  if(settings.showHenry)loadHenry(x,revision);
+  if(settings.showSda)loadSda(x,revision);
+ };
+ const readAi=()=>{if(still()&&settings.showAi)loadAI(x,revision)};
+ if(fromScroll){verseContextTimer=setTimeout(read,180);aiContextTimer=setTimeout(readAi,850)}
+ else{read();aiContextTimer=setTimeout(readAi,300)}
+}
+function activateVisibleVerse(verse,preserveWordStudy=false,fromScroll=true){
+ verse=Number(verse);
+ if(!verse||verse===Number(current.verse))return false;
+ current={...current,verse};
+ contextRevision++;
+ if(!preserveWordStudy){wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key'}
+ wordStudyLoaded=null;
+ const precise=nearestTranslationRow($('preciseText'),verse);
+ currentPreciseText=precise&&Number(precise.dataset.verse)===verse?precise.querySelector('.verse-text')?.textContent||'':'';
+ $('cur').textContent=refOf();$('cur').setAttribute('aria-label','Choose verse, current '+refOf());
+ SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));
+ updateActiveVerseHighlights();wordStudyMarkTappedWords();updateBookmarkUI();
+ refreshActiveVerseContent(fromScroll);
+ return true;
+}
+function onTranslationScroll(){
+ const el=this,expected=programmaticScroll.get(el);
+ if(expected!==undefined){
+  programmaticScroll.delete(el);
+  if(Math.abs(el.scrollTop-expected)<=2)return;
+ }
+ pendingScrollSource=el;
+ if(scrollFrame)return;
+ scrollFrame=requestAnimationFrame(()=>{
+  scrollFrame=0;
+  const source=pendingScrollSource;pendingScrollSource=null;
+  if(!source||!source.isConnected||!source.classList.contains('translation-scroll'))return;
+  const anchor=currentReadingAnchor(source);if(!anchor)return;
+  synchronizeTranslations(anchor,source);
+  activateVisibleVerse(anchor.verse,false,true);
+ });
+}
+function alignSelectedVerse(source,verse){
+ const row=nearestTranslationRow(source,verse);
+ if(!row)return;
+ const anchor={verse:Number(verse),fraction:Math.max(0,Math.min(1,(source.scrollTop+readingFocusY(source)-translationRowTop(row,source))/Math.max(1,row.offsetHeight)))};
+ synchronizeTranslations(anchor,source);
+}
+function renderScrollableChapter(el,chapter,x,type,refs,idx,section){
+ const rows=chapterRows(chapter);if(!rows.length)throw new Error();
+ el.innerHTML='';el.classList.add('translation-scroll');
+ const range=section||fallbackVerseWindow(x,rows);
+ const windowRows=rows.filter(r=>{const v=Number(r.verse);return v>=range.start&&v<=range.end});
+ if(idx===0)activeTopicSection={...range,book:x.book,chapter:x.chapter};
+ let initialRow=null;
+ for(const item of windowRows){
+  const v=Number(item.verse);if(!v)continue;
+  const target={book:x.book,chapter:x.chapter,verse:v};
+  const row=document.createElement('div');
+  row.className='verse-line'+(v===Number(current.verse)?' current-verse':'');
+  row.dataset.verse=String(v);row.setAttribute('role','button');row.tabIndex=0;
+  row.title='Tap to study this verse';
+  row.onclick=e=>{
+   if(e.target.closest('button,.vs-tap-word'))return;
+   activateVisibleVerse(v,false,false);alignSelectedVerse(el,v);
+  };
+  row.onkeydown=e=>{
+   if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button,.vs-tap-word')){
+    e.preventDefault();activateVisibleVerse(v,false,false);alignSelectedVerse(el,v);
+   }
+  };
+  const num=document.createElement('span');num.className='verse-num';num.textContent=v;
+  const txt=document.createElement('span');txt.className='verse-text';
+  const plain=htmlToText(item.text||'');
+  if(idx===0)wordStudyMakeVerseClickable(txt,plain,target);else txt.textContent=plain;
+  row.append(num,txt);el.appendChild(row);
+  if(v===Number(x.verse)){initialRow=row;addVerseTools(row,htmlToText(item.comment||''),type,refs)}
+  window.VS_STUDIES?.decorateVerse(row,x,v,type);
+ }
+ if(idx===0){
+  const precise=nearestTranslationRow(el,current.verse);
+  currentPreciseText=precise&&Number(precise.dataset.verse)===current.verse?precise.querySelector('.verse-text')?.textContent||'':'';
+  loadWordStudy({...current},contextRevision);
+ }
+ el.addEventListener('scroll',onTranslationScroll,{passive:true});
+ requestAnimationFrame(()=>{
+  if(!el.isConnected||$(el.id)!==el)return;
+  updateActiveVerseHighlights();
+  if(lastReadingAnchor)positionTranslationAtAnchor(el,lastReadingAnchor);
+  else{
+   const selected=nearestTranslationRow(el,current.verse)||initialRow;
+   if(selected)scrollTranslationInstant(el,translationRowTop(selected,el)-8);
+  }
+ });
+}
+async function loadTranslations(x){
+ const token=++translationToken,refsPromise=getCrossRefs(x),baseChapterPromise=getChapter(settings.precise,x);
+ const sectionPromise=baseChapterPromise.then(ch=>getTopicSection(x,chapterRows(ch))).catch(()=>null);
+ const slots=[['preciseText',settings.precise],['looseText',settings.loose],['paraphraseText',settings.paraphrase]];
+ slots.forEach(async([id,type],idx)=>{
+  const el=$(id);
+  try{
+   if(type===TCW_CODE){
+    const r=await publicVerse(type,x);if(token!==translationToken)return;
+    el.classList.remove('translation-scroll');el.innerHTML='<div>'+esc(r.text)+'</div>';return;
+   }
+   const chapterPromise=idx===0?baseChapterPromise:getChapter(type,x);
+   const [chapter,refs,section]=await Promise.all([chapterPromise,idx===0?refsPromise:Promise.resolve([]),sectionPromise]);
+   if(token!==translationToken)return;
+   renderScrollableChapter(el,chapter,x,type,refs,idx,section);
+  }catch{
+   try{
+    const r=await publicVerse(type,x);if(token!==translationToken)return;
+    el.classList.remove('translation-scroll');el.innerHTML='';
+    if(idx===0){
+     const txt=document.createElement('span');txt.className='verse-text';
+     wordStudyMakeVerseClickable(txt,r.text,x);el.appendChild(txt);
+     currentPreciseText=r.text;loadWordStudy({...current},contextRevision);
+    }else el.innerHTML='<div>'+esc(r.text)+'</div>';
+   }catch{
+    if(token!==translationToken)return;
+    el.classList.remove('translation-scroll');
+    el.innerHTML='<div class="small">'+esc(type)+' could not load. Tap the current verse to retry.</div>';
+   }
+  }
+ });
+}
 const HENRY_BOOKS=Object.fromEntries(BOOKS.map(b=>[b.id,b.name.toLowerCase().replace(/ /g,'-')]));
 function parseHenryCommentary(md,verse){const body=String(md||'').replace(/^---[\s\S]*?---/,'');const re=/## Verses?\s+(\d+)(?:[–-](\d+))?\s*\n\n([\s\S]*?)(?=\n## |$)/g;let m;while((m=re.exec(body))){const a=Number(m[1]),b=Number(m[2]||m[1]);if(verse>=a&&verse<=b)return{text:m[3].replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[*_#>`]/g,'').replace(/\s+/g,' ').trim(),a,b}}return null}
-async function loadHenry(x){const el=$('commonCommentary'),title=$('commonCommentaryTitle');if(!el)return;const slug=HENRY_BOOKS[x.book];try{const ck=`vs421_henry_${x.book}_${x.chapter}`;let md=SAFE_STORAGE.getItem(ck);if(!md){const filename=x.book===19?`psalm-${x.chapter}.md`:`chapter-${x.chapter}.md`;const r=await fetch(`https://raw.githubusercontent.com/lyteword/mhenry-concise/main/${slug}/${filename}`,{cache:'force-cache'});if(!r.ok)throw new Error();md=await r.text();SAFE_STORAGE.setItem(ck,md)}const result=parseHenryCommentary(md,x.verse);if(result){title.textContent=`Matthew Henry Concise · ${refOf(x)}`;el.textContent=result.text}else el.textContent='No separate comment was found for this verse.'}catch{el.textContent='Common commentary could not load.'}}
+async function loadHenry(x,revision=contextRevision){
+ const el=$('commonCommentary'),title=$('commonCommentaryTitle');if(!el)return;
+ const still=()=>contextIsCurrent(x,revision,el,'commonCommentary'),slug=HENRY_BOOKS[x.book];
+ try{
+  const ck='vs421_henry_'+x.book+'_'+x.chapter;
+  let md=SAFE_STORAGE.getItem(ck);
+  if(!md){
+   const filename=x.book===19?'psalm-'+x.chapter+'.md':'chapter-'+x.chapter+'.md';
+   const r=await fetch('https://raw.githubusercontent.com/lyteword/mhenry-concise/main/'+slug+'/'+filename,{cache:'force-cache'});
+   if(!r.ok)throw new Error();
+   md=await r.text();SAFE_STORAGE.setItem(ck,md);
+  }
+  if(!still())return;
+  const result=parseHenryCommentary(md,x.verse);
+  title.textContent='Matthew Henry Concise · '+refOf(x);
+  el.textContent=result?result.text:'No separate comment was found for this verse.';
+ }catch{if(still())el.textContent='Common commentary could not load.'}
+}
 const SDA_RANGES=[[1,1,5],[2,6,12],[3,13,22],[4,23,39],[5,40,43],[6,44,49],[7,50,66]],SDA_NAMES={9:'1-Samuel',10:'2-Samuel',11:'1-Kings',12:'2-Kings',13:'1-Chronicles',14:'2-Chronicles',22:'The Song of Solomon',25:'Lamentations of Jeremiah',50:'Phillippians'};
 function sdaFileInfo(id){const r=SDA_RANGES.find(([,a,b])=>id>=a&&id<=b),book=bookById(id);if(!r||!book||id===63||id===64)return null;return{volume:r[0],file:`SdaBc-${r[0]} (${String(id).padStart(2,'0')}) ${SDA_NAMES[id]||book.name}`}}
 function normalizeSdaText(t){return String(t||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim()}
 function extractSdaVerse(text,x){const t=normalizeSdaText(text);let start=0;for(const p of [new RegExp(`\\bCHAPTER\\s+${x.chapter}\\b`,'i'),new RegExp(`\\bChapter\\s+${x.chapter}\\b`,'i'),new RegExp(`\\n${x.chapter}\\s*\\n`)]){const m=t.match(p);if(m){start=m.index;break}}const rest=t.slice(start),nm=rest.match(new RegExp(`\\bCHAPTER\\s+${x.chapter+1}\\b`,'i')),chapterText=nm?rest.slice(0,nm.index):rest.slice(0,90000);let vm=null;for(const p of [new RegExp(`(?:^|\\n)\\s*${x.verse}\\.\\s+`,'m'),new RegExp(`(?:^|\\n)\\s*${x.verse}\\s*[-–—]\\s*`,'m'),new RegExp(`\\bVerse\\s+${x.verse}\\b`,'i'),new RegExp(`\\bVs?\\.\\s*${x.verse}\\b`,'i')]){vm=chapterText.match(p);if(vm)break}if(!vm)return'';const after=chapterText.slice(vm.index),next=after.slice(vm[0].length).match(/\n\s*\d{1,2}\.\s+/),block=next?after.slice(0,vm[0].length+next.index):after.slice(0,2200);return block.replace(/\n+/g,' ').replace(/\s+/g,' ').trim().slice(0,2200)}
-async function loadSda(x){const el=$('sdaCommentary'),title=$('sdaCommentaryTitle');if(!el)return;const info=sdaFileInfo(x.book);if(!info){el.textContent='SDA Bible Commentary source is not connected for this book yet.';return}const ck=`vs421_sda_${x.book}_${x.chapter}_${x.verse}`,saved=SAFE_STORAGE.getItem(ck);if(saved){title.textContent=`SDA Commentary · vol. ${info.volume} · ${refOf(x)}`;el.textContent=saved;return}try{const base='https://archive.org/download/SdaBibleCommentary1980/';let tx='';for(const suffix of ['_djvu.txt','.txt']){const r=await fetch(`${base}${encodeURIComponent(info.file+suffix)}`,{cache:'force-cache'}).catch(()=>null);if(r?.ok){tx=await r.text();break}}if(!tx)throw new Error();const text=extractSdaVerse(tx,x);if(text){SAFE_STORAGE.setItem(ck,text);title.textContent=`SDA Commentary · vol. ${info.volume} · ${refOf(x)}`;el.textContent=text}else el.textContent='No direct SDA Bible Commentary note was found for this verse.'}catch{el.textContent='SDA commentary source could not load.'}}
+const sdaBookSources=new Map();
+async function getSdaSourceText(info){
+ if(!sdaBookSources.has(info.file)){
+  const pending=(async()=>{
+   const base='https://archive.org/download/SdaBibleCommentary1980/';
+   for(const suffix of ['_djvu.txt','.txt']){
+    const r=await fetch(base+encodeURIComponent(info.file+suffix),{cache:'force-cache'}).catch(()=>null);
+    if(r?.ok)return r.text();
+   }
+   throw new Error('SDA source unavailable');
+  })().catch(e=>{sdaBookSources.delete(info.file);throw e});
+  sdaBookSources.set(info.file,pending);
+ }
+ return sdaBookSources.get(info.file);
+}
+async function loadSda(x,revision=contextRevision){
+ const el=$('sdaCommentary'),title=$('sdaCommentaryTitle');if(!el)return;
+ const still=()=>contextIsCurrent(x,revision,el,'sdaCommentary');
+ const info=sdaFileInfo(x.book);
+ if(!info){if(still())el.textContent='SDA Bible Commentary source is not connected for this book yet.';return}
+ const ck='vs421_sda_'+x.book+'_'+x.chapter+'_'+x.verse,saved=SAFE_STORAGE.getItem(ck);
+ if(saved){if(still()){title.textContent='SDA Commentary · vol. '+info.volume+' · '+refOf(x);el.textContent=saved}return}
+ try{
+  const tx=await getSdaSourceText(info);if(!still())return;
+  const note=extractSdaVerse(tx,x);
+  if(note){
+   SAFE_STORAGE.setItem(ck,note);
+   title.textContent='SDA Commentary · vol. '+info.volume+' · '+refOf(x);
+   el.textContent=note;
+  }else el.textContent='No direct SDA Bible Commentary note was found for this verse.';
+ }catch{if(still())el.textContent='SDA commentary source could not load.'}
+}
 const AI_WORKER='https://verse-study.jkharris27.workers.dev';
-async function loadAI(x){const el=$('aiCommentary');if(!el)return;const ck=`vs_ai_${x.book}_${x.chapter}_${x.verse}`,cached=SAFE_STORAGE.getItem(ck);if(cached){el.textContent=cached;return}el.textContent='Generating AI commentary…';try{const [a,b,c]=await Promise.all([publicVerse(settings.precise,x),publicVerse(settings.loose,x),publicVerse(settings.paraphrase,x)]),r=await fetch(AI_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference:refOf(x),esv:a.text,nlt:b.text,msg:c.text,commonCommentary:$('commonCommentary')?.textContent||'',sdaCommentary:$('sdaCommentary')?.textContent||''})});if(!r.ok)throw new Error();const data=await r.json(),text=String(data.commentary||'').trim();if(!text)throw new Error();SAFE_STORAGE.setItem(ck,text);el.textContent=text}catch{el.textContent='AI commentary could not load. Tap the current verse to try again.'}}
+async function loadAI(x,revision=contextRevision){
+ const el=$('aiCommentary');if(!el)return;
+ const still=()=>contextIsCurrent(x,revision,el,'aiCommentary');
+ const ck='vs_ai_'+x.book+'_'+x.chapter+'_'+x.verse,cached=SAFE_STORAGE.getItem(ck);
+ if(cached){if(still())el.textContent=cached;return}
+ if(!still())return;
+ el.textContent='Generating AI commentary…';
+ try{
+  const [a,b,c]=await Promise.all([publicVerse(settings.precise,x),publicVerse(settings.loose,x),publicVerse(settings.paraphrase,x)]);
+  if(!still())return;
+  const r=await fetch(AI_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({reference:refOf(x),esv:a.text,nlt:b.text,msg:c.text,commonCommentary:$('commonCommentary')?.textContent||'',sdaCommentary:$('sdaCommentary')?.textContent||''})});
+  if(!r.ok)throw new Error();
+  const data=await r.json(),result=String(data.commentary||'').trim();
+  if(!result)throw new Error();
+  SAFE_STORAGE.setItem(ck,result);
+  if(still())el.textContent=result;
+ }catch{if(still())el.textContent='AI commentary could not load. Tap the current verse to try again.'}
+}
 const STEP_GREEK_BOOKS={40:'Matt',41:'Mark',42:'Luke',43:'John',44:'Acts',45:'Rom',46:'1Cor',47:'2Cor',48:'Gal',49:'Eph',50:'Phil',51:'Col',52:'1Thess',53:'2Thess',54:'1Tim',55:'2Tim',56:'Titus',57:'Phlm',58:'Heb',59:'Jas',60:'1Pet',61:'2Pet',62:'1John',63:'2John',64:'3John',65:'Jude',66:'Rev'},OSHB_BOOKS={1:'Gen',2:'Exod',3:'Lev',4:'Num',5:'Deut',6:'Josh',7:'Judg',8:'Ruth',9:'1Sam',10:'2Sam',11:'1Kgs',12:'2Kgs',13:'1Chr',14:'2Chr',15:'Ezra',16:'Neh',17:'Esth',18:'Job',19:'Ps',20:'Prov',21:'Eccl',22:'Song',23:'Isa',24:'Jer',25:'Lam',26:'Ezek',27:'Dan',28:'Hos',29:'Joel',30:'Amos',31:'Obad',32:'Jonah',33:'Mic',34:'Nah',35:'Hab',36:'Zeph',37:'Hag',38:'Zech',39:'Mal'};
 function normEnglish(t){return String(t||'').toLowerCase().replace(/[“”‘’"'.,;:!?()[\\]{}—–-]/g,' ').replace(/\\s+/g,' ').trim()}
 function preciseVerseWord(cands){const list=cands.filter(Boolean).map(c=>cleanLexText(c).replace(/[\[\]<>]/g,'').trim()).filter(Boolean),verse=(String(currentPreciseText||'').match(/[\p{L}\p{N}’'-]+/gu)||[]),vn=verse.map(normEnglish);for(const c of list){const cw=(c.match(/[\p{L}\p{N}’'-]+/gu)||[]);for(let len=Math.min(3,cw.length);len>=1;len--){for(let a=0;a+len<=cw.length;a++){const needle=cw.slice(a,a+len).map(normEnglish);for(let i=0;i+len<=vn.length;i++){if(needle.every((w,j)=>w===vn[i+j]))return verse.slice(i,i+len).join(' ')}}}}const fallback=(list[0]?.match(/[\p{L}\p{N}’'-]+/gu)||[]).slice(0,3).join(' ');return fallback||'—'}
@@ -274,7 +518,7 @@ function wordStudyTapEnglish(x,index,word){
  wordStudyTap={book:Number(x.book),chapter:Number(x.chapter),verse:Number(x.verse),index,word};
  wordStudyFocusedIndex=null;wordStudyMode='focus';wordStudyScrollPending=true;
  const isCurrent=wordStudyLocationKey(x)===wordStudyLocationKey(current);
- if(!isCurrent){goTo(x,true);return}
+ if(!isCurrent){activateVisibleVerse(x.verse,true,false);alignSelectedVerse($('preciseText'),x.verse);return}
  wordStudyMarkTappedWords();
  const el=$('wordStudy'),saved=wordStudyLoaded;
  if(saved&&saved.key===wordStudyLocationKey(current))wordStudyRender(el,saved.items);
@@ -380,11 +624,11 @@ function wordStudyRender(el,items){
   el.insertBefore(button,el.querySelector('.wordrow'));
  }
 }
-async function loadWordStudy(x){
+async function loadWordStudy(x,revision=contextRevision){
  const el=$('wordStudy'),title=$('wordStudyTitle');if(!el||!title)return;
  const isNT=x.book>=40;title.textContent=isNT?'Word Study · Greek':'Word Study · Hebrew';
  el.textContent='Loading '+(isNT?'Greek':'Hebrew')+' word study…';
- function stillCurrent(){return current.book===x.book&&current.chapter===x.chapter&&current.verse===x.verse&&document.getElementById('wordStudy')===el}
+ function stillCurrent(){return contextIsCurrent(x,revision,el,'wordStudy')}
  try{
   if(isNT){
    const code=STEP_GREEK_BOOKS[x.book];
@@ -432,8 +676,48 @@ function updateBookmarkUI(){const marked=isBookmarked(),count=loadBookmarks().le
 function toggleCurrentBookmark(){let a=loadBookmarks(),key=locationKey(current);a=a.some(b=>locationKey(b)===key)?a.filter(b=>locationKey(b)!==key):[...a,{...current}];saveBookmarks(a);updateBookmarkUI()}
 function commentarySection(id,title,loading){return`<section class="group-section commentary-section"><div class="eyebrow" id="${id}Title">${title}</div><div id="${id}" class="commentary-body">${loading}</div></section>`}
 function commentaryCard(id,title,loading){return`<article class="card nested-scroll-card"><div class="eyebrow" id="${id}Title">${title}</div><div id="${id}" class="commentary-body">${loading}</div></article>`}
-function render(){currentPreciseText='';wordStudyLoaded=null;const ref=refOf();$('cur').textContent=ref;$('cur').setAttribute('aria-label',`Choose verse, current ${ref}`);let html=`<article class="card grouped-card translations-card"><section class="group-section translation-section"><div class="eyebrow">Precise · ${esc(settings.precise)}</div><div id="preciseText" class="note">Loading ${esc(settings.precise)}…</div></section><section class="group-section translation-section"><div class="eyebrow">Loose · ${esc(settings.loose)}</div><div id="looseText" class="note">Loading ${esc(settings.loose)}…</div></section><section class="group-section translation-section"><div class="eyebrow">Paraphrase · ${esc(settings.paraphrase)}</div><div id="paraphraseText" class="note">Loading ${esc(settings.paraphrase)}…</div></section></article><article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>`;if(settings.showHenry||settings.showSda){html+='<article class="card grouped-card commentary-group">';if(settings.showHenry)html+=commentarySection('commonCommentary','Common Commentary · Matthew Henry Concise','Loading commentary…');if(settings.showSda)html+=commentarySection('sdaCommentary','SDA Commentary · SDA Bible Commentary','Loading SDA commentary…');html+='</article>'}if(settings.showAi)html+=commentaryCard('aiCommentary','AI Commentary','Generating AI commentary…');$('study').innerHTML=html;SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));updateBookmarkUI();loadTranslations({...current});if(settings.showHenry)loadHenry({...current});if(settings.showSda)loadSda({...current});if(settings.showAi)loadAI({...current})}
-function goTo(x,keepWordStudyFocus=false){if(!validLocation(x))return;if(!keepWordStudyFocus){wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key'}current={book:+x.book,chapter:+x.chapter,verse:+x.verse};infoClose();closeAll();render()}
+function render(){
+ clearTimeout(verseContextTimer);clearTimeout(aiContextTimer);
+ contextRevision++;lastReadingAnchor=null;pendingScrollSource=null;
+ if(scrollFrame){cancelAnimationFrame(scrollFrame);scrollFrame=0}
+ currentPreciseText='';wordStudyLoaded=null;
+ const ref=refOf();$('cur').textContent=ref;$('cur').setAttribute('aria-label','Choose verse, current '+ref);
+ let html='<article class="card grouped-card translations-card">'
+  +'<section class="group-section translation-section"><div class="eyebrow">Precise · '+esc(settings.precise)+'</div><div id="preciseText" class="note">Loading '+esc(settings.precise)+'…</div></section>'
+  +'<section class="group-section translation-section"><div class="eyebrow">Loose · '+esc(settings.loose)+'</div><div id="looseText" class="note">Loading '+esc(settings.loose)+'…</div></section>'
+  +'<section class="group-section translation-section"><div class="eyebrow">Paraphrase · '+esc(settings.paraphrase)+'</div><div id="paraphraseText" class="note">Loading '+esc(settings.paraphrase)+'…</div></section></article>'
+  +'<article class="card wordstudy"><div class="eyebrow" id="wordStudyTitle">Word Study</div><div id="wordStudy" class="wordloading">Loading original-language word study…</div></article>';
+ if(settings.showHenry||settings.showSda){
+  html+='<article class="card grouped-card commentary-group">';
+  if(settings.showHenry)html+=commentarySection('commonCommentary','Common Commentary · Matthew Henry Concise','Loading commentary…');
+  if(settings.showSda)html+=commentarySection('sdaCommentary','SDA Commentary · SDA Bible Commentary','Loading SDA commentary…');
+  html+='</article>';
+ }
+ if(settings.showAi)html+=commentaryCard('aiCommentary','AI Commentary','Generating AI commentary…');
+ $('study').innerHTML=html;
+ SAFE_STORAGE.setItem('verseStudy.lastLocation',JSON.stringify(current));
+ updateBookmarkUI();
+ const x={...current},revision=contextRevision;
+ loadTranslations(x);
+ if(settings.showHenry)loadHenry(x,revision);
+ if(settings.showSda)loadSda(x,revision);
+ if(settings.showAi)loadAI(x,revision);
+}
+function goTo(x,keepWordStudyFocus=false){
+ if(!validLocation(x))return;
+ infoClose();closeAll();
+ const sameChapter=current.book===Number(x.book)&&current.chapter===Number(x.chapter);
+ const existing=sameChapter?TRANSLATION_IDS.map(id=>$(id)).find(el=>translationRows(el).some(row=>Number(row.dataset.verse)===Number(x.verse))):null;
+ if(existing){
+  if(!keepWordStudyFocus){wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key'}
+  activateVisibleVerse(Number(x.verse),keepWordStudyFocus,false);
+  synchronizeTranslations({verse:Number(x.verse),fraction:0.15},null);
+  return;
+ }
+ if(!keepWordStudyFocus){wordStudyTap=null;wordStudyFocusedIndex=null;wordStudyMode='key'}
+ current={book:Number(x.book),chapter:Number(x.chapter),verse:Number(x.verse)};
+ render();
+}
 const BOOK_GROUPS={OT:[{title:'Law',ids:[1,2,3,4,5]},{title:'History & Wisdom',ids:[6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]},{title:'Prophets',ids:[23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39]}],NT:[{title:'Gospels & Acts',ids:[40,41,42,43,44]},{title:"Paul's Letters",ids:[45,46,47,48,49,50,51,52,53,54,55,56,57]},{title:'General & Revelation',ids:[58,59,60,61,62,63,64,65,66]}]};
 function setMainTab(t){pickerTestament=t;$('otTab').classList.toggle('active',t==='OT');$('ntTab').classList.toggle('active',t==='NT');$('studiesTab').classList.toggle('active',t==='STUDIES');$('chapterScreen').style.display='none';$('verseScreen').style.display='none';$('studyDetailScreen').style.display='none';$('booksScreen').style.display='block';if(t==='STUDIES'){$('bookColumns').style.display='none';$('savedPickerSection').style.display='block';renderSavedPicker()}else{$('savedPickerSection').style.display='none';$('bookColumns').style.display='grid';renderBookColumns()}}
 function renderBookColumns(){const box=$('bookColumns');box.innerHTML='';BOOK_GROUPS[pickerTestament].forEach(g=>{const col=document.createElement('section');col.className='booksection';const h=document.createElement('div');h.className='sectiontitle';h.textContent=g.title;col.appendChild(h);g.ids.forEach(id=>{const b=bookById(id),btn=document.createElement('button');btn.className='bookbtn';if(id===current.book)btn.classList.add('current');if(id===pickerBook)btn.classList.add('selected');btn.textContent=b.name;btn.onclick=()=>selectBookForChapters(id);col.appendChild(btn)});box.appendChild(col)})}
@@ -595,6 +879,6 @@ async function next(){const n=await verseCount(current.book,current.chapter).cat
 $('prev').onclick=previous;$('next').onclick=next;
 let sx=0,sy=0,st=0,overlaySwipe=false;document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();overlaySwipe=!!e.target.closest('.overlay.show,.shareoverlay.show,.searchoverlay.show')},{passive:true});document.addEventListener('touchend',e=>{if(!st||e.changedTouches.length!==1)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;st=0;if(dt>900||Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.25)return;if(overlaySwipe){if(dx>0)exitOverlay();return}if(e.target.closest('input,select,textarea,.commentary-body'))return;const verseScroller=e.target.closest('.translation-scroll');if(verseScroller&&activeTopicSection&&activeTopicSection.book===current.book&&activeTopicSection.chapter===current.chapter){if(dx<0&&activeTopicSection.nextStart)return goTo({...current,verse:activeTopicSection.nextStart});if(dx>0&&activeTopicSection.prevStart)return goTo({...current,verse:activeTopicSection.prevStart})}if(dx<0)next();else previous()},{passive:true});
 window.VS_STUDIES?.connect({bookByName:n=>BOOKS.find(b=>b.name.toLowerCase()===String(n).trim().toLowerCase()),isValidLocation:validLocation,refOf,loadStudies,saveStudies,loadStudyNotes,saveStudyNotes,loadBookmarks,saveBookmarks,updateBookmarkUI,goTo,render,current:()=>current,bookById,infoShow,infoClose,getChapter,chapterRows,cleanBibleText,settings:()=>settings});
-async function init(){syncSettingsUI();await refreshTcwStatus();render();if('serviceWorker'in navigator&&location.protocol==='https:'){try{const r=await navigator.serviceWorker.register('./sw.js?v=465');r.update()}catch{}}}
+async function init(){syncSettingsUI();await refreshTcwStatus();render();if('serviceWorker'in navigator&&location.protocol==='https:'){try{const r=await navigator.serviceWorker.register('./sw.js?v=466');r.update()}catch{}}}
 init();
 })();
